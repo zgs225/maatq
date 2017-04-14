@@ -43,17 +43,3 @@ Mataq
     }
 }
 ```
-
-### 启动
-
-``` bash
-mataqd -try=3 -parallel=4 -addr='127.0.0.1:6379' -debug=false -password=""
-```
-
-#### 参数说明
-
-* `try` 一个任务失败后最大重试次数
-* `parallel` 同时执行任务的并发数
-* `addr` Redis的地址
-* `password` Redis密码
-* `debug` 是否开启Debug
