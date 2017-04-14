@@ -6,7 +6,7 @@ import (
 	"runtime"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/zgs225/mataq"
+	"github.com/zgs225/maatq"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 )
 
 func SayHello(arg interface{}) (interface{}, error) {
-	sval, err := mataq.AtoString(arg)
+	sval, err := maatq.AtoString(arg)
 	if err != nil {
 		return "", err
 	}
@@ -38,12 +38,12 @@ func main() {
 	flag.Parse()
 	setLogger()
 
-	group, err := mataq.NewWorkerGroup(&mataq.GroupOptions{*parallel, *addr, *password, *try})
+	group, err := maatq.NewWorkerGroup(&maatq.GroupOptions{*parallel, *addr, *password, *try})
 	if err != nil {
 		log.Panic(err)
 	}
 
-	group.AddEventHandler("hello", mataq.EventHandler(SayHello))
+	group.AddEventHandler("hello", maatq.EventHandler(SayHello))
 
 	group.ServeLoop()
 }

@@ -1,4 +1,4 @@
-Mataq
+MaatQ
 ===
 
 基于Redis的简单的消息队列。
