@@ -47,14 +47,14 @@ func (c *Consumer) RemoveEventHandler(event string) {
 	delete(c.EventHandlers, event)
 }
 
-func (c *Consumer) CheckConn() {
+func (c *Consumer) checkConn() {
 	cmd := c.Client.Ping()
 	if err := cmd.Err(); err != nil {
 		c.Logger.Panic(err)
 	}
 }
 
-func (c *Consumer) InitLog() {
+func (c *Consumer) initLog() {
 	c.Logger = log.WithFields(log.Fields{
 		"workerId": c.Id,
 		"queue":    DefaultQueue,

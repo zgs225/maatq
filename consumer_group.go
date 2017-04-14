@@ -58,8 +58,8 @@ func (g *ConsumerGroup) initConsumers() {
 			DB:       0,
 		})
 		c.EventHandlers = make(map[string]EventHandler)
-		c.InitLog()
-		c.CheckConn()
+		c.initLog()
+		c.checkConn()
 	}
 }
 
