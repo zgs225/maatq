@@ -108,13 +108,13 @@ func (c *Consumer) handle(msg string) {
 		return
 	}
 
-	event = message.GetEvent()
+	event = message.Event
 	handler = c.EventHandlers[event]
-	result, err := handler.Call(message.GetData())
+	result, err := handler.Call(message.Data)
 
 	if err != nil {
 		c.Logger.WithFields(message.ToLogFields()).Error(err)
-		if message.GetTry() < c.Try {
+		if message.Try < c.Try {
 			c.requeue(&message)
 		} else {
 			c.enqueueFailed(&message)
@@ -146,14 +146,14 @@ func (c *Consumer) notify(message *Message, success bool, errMsg string, data in
 
 	bytes, _ := json.Marshal(jResp)
 	resp = string(bytes[:])
-	c.Logger.WithField("eventId", message.GetId()).Debug(resp)
+	c.Logger.WithField("eventId", message.Id).Debug(resp)
 
-	c.Client.Set(message.GetId(), resp, 0)
+	c.Client.Set(message.Id, resp, 0)
 }
 
 func (c *Consumer) requeue(message *Message) {
-	*(message.Try) += 1
-	*(message.Timestamp) = time.Now().Unix()
+	message.Try += 1
+	message.Timestamp = time.Now().Unix()
 	bytes, _ := json.Marshal(*message)
 	c.Client.RPush(DefaultQueue, string(bytes[:]))
 }
@@ -164,13 +164,13 @@ func (c *Consumer) checkMessage(message *Message) bool {
 		err     string
 	)
 
-	if message.Event == nil {
+	if message.Event == "" {
 		checked = false
 		err = "field event required"
 		c.Logger.WithFields(message.ToLogFields()).Error(err)
 		return checked
 	} else {
-		event := message.GetEvent()
+		event := message.Event
 		_, ok := c.EventHandlers[event]
 
 		if !ok {
@@ -181,7 +181,7 @@ func (c *Consumer) checkMessage(message *Message) bool {
 		}
 	}
 
-	if len(message.GetId()) == 0 {
+	if len(message.Id) == 0 {
 		checked = false
 		err = "event id required"
 		c.Logger.WithFields(message.ToLogFields()).Error(err)
