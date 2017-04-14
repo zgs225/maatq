@@ -75,7 +75,7 @@ func (c *Consumer) Work() {
 
 		c.Logger.WithFields(log.Fields{
 			"msg": result[1],
-		}).Info("message recieved")
+		}).Debug("message recieved")
 		c.handle(result[1])
 		c.CurrentMsg = nil
 		c.Mu.Unlock()

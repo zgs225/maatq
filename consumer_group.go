@@ -12,6 +12,12 @@ import (
 	"github.com/go-redis/redis"
 )
 
+func init() {
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp: true,
+	})
+}
+
 var (
 	ParallelError = errors.New("parallel should gte 0")
 )
@@ -90,6 +96,7 @@ func (g *ConsumerGroup) handleSignals() {
 
 				for _, consumer := range g.Consumers {
 					consumer.PushBackCurrentMsg()
+					consumer.Client.Close()
 				}
 
 				os.Exit(0)
