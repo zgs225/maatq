@@ -57,9 +57,3 @@ mataqd -try=3 -parallel=4 -addr='127.0.0.1:6379' -debug=false -password=""
 * `addr` Redis的地址
 * `password` Redis密码
 * `debug` 是否开启Debug
-
-### 任务
-
-+ `hello` Hello world 任务
-+ `mipush` MAMC 小米推送
-+ `mamc_huawei_push` MAMC 华为推送
