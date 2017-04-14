@@ -22,14 +22,17 @@ var (
 	ParallelError = errors.New("parallel should gte 0")
 )
 
-type WorkerGroup struct {
+type GroupOptions struct {
 	Parallel int
-	C        chan int
-	Workers  []*Worker
+	Addr     string
+	Password string
+	Try      int
+}
 
-	try           int
-	redisAddr     string
-	redisPassword string
+type WorkerGroup struct {
+	C       chan int
+	Workers []*Worker
+	options *GroupOptions
 }
 
 func (g *WorkerGroup) ServeLoop() {
@@ -47,20 +50,20 @@ func (g *WorkerGroup) AddEventHandler(name string, handler EventHandler) {
 }
 
 func (g *WorkerGroup) wait() {
-	for i := 0; i < g.Parallel; i++ {
+	for i := 0; i < g.options.Parallel; i++ {
 		<-g.C
 	}
 }
 
 func (g *WorkerGroup) initWorkers() {
-	for i := 0; i < g.Parallel; i++ {
+	for i := 0; i < g.options.Parallel; i++ {
 		// 初始化Worker
-		c := &Worker{Try: g.try, C: g.C, Id: i}
+		c := &Worker{Try: g.options.Try, C: g.C, Id: i}
 		g.Workers[i] = c
 
 		c.Client = redis.NewClient(&redis.Options{
-			Addr:     g.redisAddr,
-			Password: g.redisPassword,
+			Addr:     g.options.Addr,
+			Password: g.options.Password,
 			DB:       0,
 		})
 		c.EventHandlers = make(map[string]EventHandler)
@@ -106,22 +109,19 @@ func (g *WorkerGroup) handleSignals() {
 }
 
 // 获取监听队列的 Group
-func NewWorkerGroup(parallel int, addr, password string, try int) (*WorkerGroup, error) {
-	if parallel < 0 {
+func NewWorkerGroup(opt *GroupOptions) (*WorkerGroup, error) {
+	if opt.Parallel < 0 {
 		return nil, ParallelError
 	}
 
-	if parallel == 0 {
-		parallel = runtime.NumCPU()
+	if opt.Parallel == 0 {
+		opt.Parallel = runtime.NumCPU()
 	}
 
 	ptr := &WorkerGroup{
-		Parallel:      parallel,
-		C:             make(chan int, parallel),
-		Workers:       make([]*Worker, parallel),
-		try:           try,
-		redisAddr:     addr,
-		redisPassword: password,
+		C:       make(chan int, opt.Parallel),
+		Workers: make([]*Worker, opt.Parallel),
+		options: opt,
 	}
 
 	ptr.initWorkers()

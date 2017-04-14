@@ -38,7 +38,7 @@ func main() {
 	flag.Parse()
 	setLogger()
 
-	group, err := mataq.NewWorkerGroup(*parallel, *addr, *password, *try)
+	group, err := mataq.NewWorkerGroup(&mataq.GroupOptions{*parallel, *addr, *password, *try})
 	if err != nil {
 		log.Panic(err)
 	}
