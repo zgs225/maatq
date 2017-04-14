@@ -24,7 +24,7 @@ func (h EventHandler) Call(arg interface{}) (interface{}, error) {
 
 // 消费者用于从队列中取消息，并且分配任务
 // 每个消费者包含一个 redis client 和 一个事件和函数的对应列表
-type Consumer struct {
+type Worker struct {
 	Id            int
 	Client        *redis.Client
 	EventHandlers map[string]EventHandler
@@ -35,62 +35,62 @@ type Consumer struct {
 	CurrentMsg    *string
 }
 
-func (c *Consumer) AddEventHandler(event string, handler EventHandler) error {
-	if _, ok := c.EventHandlers[event]; ok {
+func (w *Worker) AddEventHandler(event string, handler EventHandler) error {
+	if _, ok := w.EventHandlers[event]; ok {
 		return EventAlreadyExists
 	}
-	c.EventHandlers[event] = handler
+	w.EventHandlers[event] = handler
 	return nil
 }
 
-func (c *Consumer) RemoveEventHandler(event string) {
-	delete(c.EventHandlers, event)
+func (w *Worker) RemoveEventHandler(event string) {
+	delete(w.EventHandlers, event)
 }
 
-func (c *Consumer) checkConn() {
-	cmd := c.Client.Ping()
+func (w *Worker) checkConn() {
+	cmd := w.Client.Ping()
 	if err := cmd.Err(); err != nil {
-		c.Logger.Panic(err)
+		w.Logger.Panic(err)
 	}
 }
 
-func (c *Consumer) initLog() {
-	c.Logger = log.WithFields(log.Fields{
-		"workerId": c.Id,
+func (w *Worker) initLog() {
+	w.Logger = log.WithFields(log.Fields{
+		"workerId": w.Id,
 		"queue":    DefaultQueue,
 	})
 }
 
-func (c *Consumer) Work() {
-	c.Logger.WithField("try", c.Try).Info("worker started")
+func (w *Worker) Work() {
+	w.Logger.WithField("try", w.Try).Info("worker started")
 
 	for {
-		result, err := c.Client.BLPop(0, DefaultQueue).Result()
+		result, err := w.Client.BLPop(0, DefaultQueue).Result()
 		if err != nil {
-			c.Logger.Error(err)
+			w.Logger.Error(err)
 			continue
 		}
-		c.CurrentMsg = &(result[1])
-		c.Mu.Lock()
+		w.CurrentMsg = &(result[1])
+		w.Mu.Lock()
 
-		c.Logger.WithFields(log.Fields{
+		w.Logger.WithFields(log.Fields{
 			"msg": result[1],
 		}).Debug("message recieved")
-		c.handle(result[1])
-		c.CurrentMsg = nil
-		c.Mu.Unlock()
+		w.handle(result[1])
+		w.CurrentMsg = nil
+		w.Mu.Unlock()
 	}
 
-	c.C <- 1
+	w.C <- 1
 }
 
-func (c *Consumer) PushBackCurrentMsg() {
-	if c.CurrentMsg != nil {
-		c.Client.LPush(DefaultQueue, *(c.CurrentMsg))
+func (w *Worker) PushBackCurrentMsg() {
+	if w.CurrentMsg != nil {
+		w.Client.LPush(DefaultQueue, *(w.CurrentMsg))
 	}
 }
 
-func (c *Consumer) handle(msg string) {
+func (w *Worker) handle(msg string) {
 	var (
 		message Message
 		handler EventHandler
@@ -100,38 +100,38 @@ func (c *Consumer) handle(msg string) {
 	err := json.Unmarshal([]byte(msg), &message)
 
 	if err != nil {
-		c.Logger.Errorf("json unmarshal error: %v", err)
+		w.Logger.Errorf("json unmarshal error: %v", err)
 		return
 	}
 
-	if !c.checkMessage(&message) {
+	if !w.checkMessage(&message) {
 		return
 	}
 
 	event = message.Event
-	handler = c.EventHandlers[event]
+	handler = w.EventHandlers[event]
 	result, err := handler.Call(message.Data)
 
 	if err != nil {
-		c.Logger.WithFields(message.ToLogFields()).Error(err)
-		if message.Try < c.Try {
-			c.requeue(&message)
+		w.Logger.WithFields(message.ToLogFields()).Error(err)
+		if message.Try < w.Try {
+			w.requeue(&message)
 		} else {
-			c.enqueueFailed(&message)
+			w.enqueueFailed(&message)
 		}
-		c.notify(&message, false, err.Error(), nil)
+		w.notify(&message, false, err.Error(), nil)
 	} else {
-		c.Logger.WithFields(message.ToLogFields()).Info("success")
-		c.notify(&message, true, "", result)
+		w.Logger.WithFields(message.ToLogFields()).Info("success")
+		w.notify(&message, true, "", result)
 	}
 }
 
-func (c *Consumer) enqueueFailed(message *Message) {
+func (w *Worker) enqueueFailed(message *Message) {
 	bytes, _ := json.Marshal(*message)
-	c.Client.RPush(DefaultFailedQueue, string(bytes[:]))
+	w.Client.RPush(DefaultFailedQueue, string(bytes[:]))
 }
 
-func (c *Consumer) notify(message *Message, success bool, errMsg string, data interface{}) {
+func (w *Worker) notify(message *Message, success bool, errMsg string, data interface{}) {
 	var (
 		jResp map[string]interface{}
 		resp  string
@@ -146,19 +146,19 @@ func (c *Consumer) notify(message *Message, success bool, errMsg string, data in
 
 	bytes, _ := json.Marshal(jResp)
 	resp = string(bytes[:])
-	c.Logger.WithField("eventId", message.Id).Debug(resp)
+	w.Logger.WithField("eventId", message.Id).Debug(resp)
 
-	c.Client.Set(message.Id, resp, 0)
+	w.Client.Set(message.Id, resp, 0)
 }
 
-func (c *Consumer) requeue(message *Message) {
+func (w *Worker) requeue(message *Message) {
 	message.Try += 1
 	message.Timestamp = time.Now().Unix()
 	bytes, _ := json.Marshal(*message)
-	c.Client.RPush(DefaultQueue, string(bytes[:]))
+	w.Client.RPush(DefaultQueue, string(bytes[:]))
 }
 
-func (c *Consumer) checkMessage(message *Message) bool {
+func (w *Worker) checkMessage(message *Message) bool {
 	var (
 		checked = true
 		err     string
@@ -167,16 +167,16 @@ func (c *Consumer) checkMessage(message *Message) bool {
 	if message.Event == "" {
 		checked = false
 		err = "field event required"
-		c.Logger.WithFields(message.ToLogFields()).Error(err)
+		w.Logger.WithFields(message.ToLogFields()).Error(err)
 		return checked
 	} else {
 		event := message.Event
-		_, ok := c.EventHandlers[event]
+		_, ok := w.EventHandlers[event]
 
 		if !ok {
 			checked = false
 			err = "event handler for event not found"
-			c.Logger.WithFields(message.ToLogFields()).Error(err)
+			w.Logger.WithFields(message.ToLogFields()).Error(err)
 			return checked
 		}
 	}
@@ -184,7 +184,7 @@ func (c *Consumer) checkMessage(message *Message) bool {
 	if len(message.Id) == 0 {
 		checked = false
 		err = "event id required"
-		c.Logger.WithFields(message.ToLogFields()).Error(err)
+		w.Logger.WithFields(message.ToLogFields()).Error(err)
 		return checked
 	}
 

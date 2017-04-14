@@ -23,9 +23,9 @@ var (
 )
 
 type WorkerGroup struct {
-	Parallel  int
-	C         chan int
-	Consumers []*Consumer
+	Parallel int
+	C        chan int
+	Workers  []*Worker
 
 	try           int
 	redisAddr     string
@@ -33,16 +33,16 @@ type WorkerGroup struct {
 }
 
 func (g *WorkerGroup) ServeLoop() {
-	for _, consumer := range g.Consumers {
-		go consumer.Work()
+	for _, worker := range g.Workers {
+		go worker.Work()
 	}
 	g.wait()
 }
 
 func (g *WorkerGroup) AddEventHandler(name string, handler EventHandler) {
 	log.Warningf("Event[%s] handled by Func[%s]", name, GetFunctionName(handler))
-	for _, consumer := range g.Consumers {
-		consumer.AddEventHandler(name, handler)
+	for _, worker := range g.Workers {
+		worker.AddEventHandler(name, handler)
 	}
 }
 
@@ -52,11 +52,11 @@ func (g *WorkerGroup) wait() {
 	}
 }
 
-func (g *WorkerGroup) initConsumers() {
+func (g *WorkerGroup) initWorkers() {
 	for i := 0; i < g.Parallel; i++ {
-		// 初始化Consumer
-		c := &Consumer{Try: g.try, C: g.C, Id: i}
-		g.Consumers[i] = c
+		// 初始化Worker
+		c := &Worker{Try: g.try, C: g.C, Id: i}
+		g.Workers[i] = c
 
 		c.Client = redis.NewClient(&redis.Options{
 			Addr:     g.redisAddr,
@@ -79,11 +79,11 @@ func (g *WorkerGroup) handleSignals() {
 				log.Warn("Prepare to safe exit...")
 				var delay = false
 
-				for _, consumer := range g.Consumers {
-					consumer.Mu.Lock()
-					defer consumer.Mu.Unlock()
+				for _, worker := range g.Workers {
+					worker.Mu.Lock()
+					defer worker.Mu.Unlock()
 
-					if consumer.CurrentMsg != nil {
+					if worker.CurrentMsg != nil {
 						delay = true
 					}
 				}
@@ -94,9 +94,9 @@ func (g *WorkerGroup) handleSignals() {
 					<-timer.C
 				}
 
-				for _, consumer := range g.Consumers {
-					consumer.PushBackCurrentMsg()
-					consumer.Client.Close()
+				for _, worker := range g.Workers {
+					worker.PushBackCurrentMsg()
+					worker.Client.Close()
 				}
 
 				os.Exit(0)
@@ -118,13 +118,13 @@ func NewWorkerGroup(parallel int, addr, password string, try int) (*WorkerGroup,
 	ptr := &WorkerGroup{
 		Parallel:      parallel,
 		C:             make(chan int, parallel),
-		Consumers:     make([]*Consumer, parallel),
+		Workers:       make([]*Worker, parallel),
 		try:           try,
 		redisAddr:     addr,
 		redisPassword: password,
 	}
 
-	ptr.initConsumers()
+	ptr.initWorkers()
 	ptr.handleSignals()
 
 	return ptr, nil
