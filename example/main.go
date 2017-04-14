@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/zgs225/mataq"
 )
 
 var (
@@ -17,7 +18,7 @@ var (
 )
 
 func SayHello(arg interface{}) (interface{}, error) {
-	sval, err := AtoString(arg)
+	sval, err := mataq.AtoString(arg)
 	if err != nil {
 		return "", err
 	}
@@ -37,14 +38,12 @@ func main() {
 	flag.Parse()
 	setLogger()
 
-	group, err := NewConsumerGroup(*parallel, *addr, *password)
+	group, err := mataq.NewConsumerGroup(*parallel, *addr, *password, *try)
 	if err != nil {
 		log.Panic(err)
 	}
 
-	group.AddEventHandler("hello", EventHandler(SayHello))
-	group.AddEventHandler("mipush", EventHandler(MiPushTask))
-	group.AddEventHandler("mamc_huawei_push", EventHandler(MamcHuaweiPushTask))
+	group.AddEventHandler("hello", mataq.EventHandler(SayHello))
 
 	group.ServeLoop()
 }

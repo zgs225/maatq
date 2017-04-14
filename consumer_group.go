@@ -1,4 +1,4 @@
-package main
+package mataq
 
 import (
 	"errors"
@@ -17,11 +17,13 @@ var (
 )
 
 type ConsumerGroup struct {
-	Parallel      int
-	C             chan int
-	Consumers     []*Consumer
-	RedisAddr     string
-	RedisPassword string
+	Parallel  int
+	C         chan int
+	Consumers []*Consumer
+
+	try           int
+	redisAddr     string
+	redisPassword string
 }
 
 func (g *ConsumerGroup) ServeLoop() {
@@ -47,12 +49,12 @@ func (g *ConsumerGroup) wait() {
 func (g *ConsumerGroup) initConsumers() {
 	for i := 0; i < g.Parallel; i++ {
 		// 初始化Consumer
-		c := &Consumer{Try: *try, C: g.C, Id: i}
+		c := &Consumer{Try: g.try, C: g.C, Id: i}
 		g.Consumers[i] = c
 
 		c.Client = redis.NewClient(&redis.Options{
-			Addr:     g.RedisAddr,
-			Password: g.RedisPassword,
+			Addr:     g.redisAddr,
+			Password: g.redisPassword,
 			DB:       0,
 		})
 		c.EventHandlers = make(map[string]EventHandler)
@@ -97,7 +99,7 @@ func (g *ConsumerGroup) handleSignals() {
 }
 
 // 获取监听队列的 Group
-func NewConsumerGroup(parallel int, addr, password string) (*ConsumerGroup, error) {
+func NewConsumerGroup(parallel int, addr, password string, try int) (*ConsumerGroup, error) {
 	if parallel < 0 {
 		return nil, ParallelError
 	}
@@ -110,8 +112,9 @@ func NewConsumerGroup(parallel int, addr, password string) (*ConsumerGroup, erro
 		Parallel:      parallel,
 		C:             make(chan int, parallel),
 		Consumers:     make([]*Consumer, parallel),
-		RedisAddr:     addr,
-		RedisPassword: password,
+		try:           try,
+		redisAddr:     addr,
+		redisPassword: password,
 	}
 
 	ptr.initConsumers()
