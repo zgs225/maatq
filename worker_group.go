@@ -45,7 +45,10 @@ func (g *WorkerGroup) ServeLoop() {
 func (g *WorkerGroup) AddEventHandler(name string, handler EventHandler) {
 	log.Warningf("Event[%s] handled by Func[%s]", name, GetFunctionName(handler))
 	for _, worker := range g.Workers {
-		worker.AddEventHandler(name, handler)
+		err := worker.AddEventHandler(name, handler)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
