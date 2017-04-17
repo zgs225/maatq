@@ -25,30 +25,31 @@ func (h EventHandler) Call(arg interface{}) (interface{}, error) {
 // 消费者用于从队列中取消息，并且分配任务
 // 每个消费者包含一个 redis client 和 一个事件和函数的对应列表
 type Worker struct {
-	Id            int
-	Client        *redis.Client
-	EventHandlers map[string]EventHandler
-	Try           int
-	C             chan int
-	Logger        *log.Entry
-	Mu            sync.Mutex
-	CurrentMsg    *string
+	Id     int
+	Logger *log.Entry
+
+	client        *redis.Client
+	eventHandlers map[string]EventHandler
+	try           int
+	c             chan int
+	mu            sync.Mutex
+	currentMsg    *string
 }
 
 func (w *Worker) AddEventHandler(event string, handler EventHandler) error {
-	if _, ok := w.EventHandlers[event]; ok {
+	if _, ok := w.eventHandlers[event]; ok {
 		return EventAlreadyExists
 	}
-	w.EventHandlers[event] = handler
+	w.eventHandlers[event] = handler
 	return nil
 }
 
 func (w *Worker) RemoveEventHandler(event string) {
-	delete(w.EventHandlers, event)
+	delete(w.eventHandlers, event)
 }
 
 func (w *Worker) checkConn() {
-	cmd := w.Client.Ping()
+	cmd := w.client.Ping()
 	if err := cmd.Err(); err != nil {
 		w.Logger.Panic(err)
 	}
@@ -62,32 +63,32 @@ func (w *Worker) initLog() {
 }
 
 func (w *Worker) Work() {
-	w.Logger.WithField("try", w.Try).Info("worker started")
+	w.Logger.WithField("try", w.try).Info("worker started")
 
 	for {
-		result, err := w.Client.BLPop(0, DefaultQueue).Result()
+		result, err := w.client.BLPop(0, DefaultQueue).Result()
 		if err != nil {
 			w.Logger.Error(err)
 			continue
 		}
-		w.CurrentMsg = &(result[1])
-		w.Mu.Lock()
+		w.currentMsg = &(result[1])
+		w.mu.Lock()
 
 		w.Logger.WithFields(log.Fields{
 			"msg": result[1],
 		}).Debug("message recieved")
 		w.handle(result[1])
-		w.CurrentMsg = nil
-		w.Mu.Unlock()
+		w.currentMsg = nil
+		w.mu.Unlock()
 	}
 
 	// 这个代码永远不会运行到
-	// w.C <- 1
+	// w.c <- 1
 }
 
-func (w *Worker) PushBackCurrentMsg() {
-	if w.CurrentMsg != nil {
-		w.Client.LPush(DefaultQueue, *(w.CurrentMsg))
+func (w *Worker) pushBackCurrentMsg() {
+	if w.currentMsg != nil {
+		w.client.LPush(DefaultQueue, *(w.currentMsg))
 	}
 }
 
@@ -110,12 +111,12 @@ func (w *Worker) handle(msg string) {
 	}
 
 	event = message.Event
-	handler = w.EventHandlers[event]
+	handler = w.eventHandlers[event]
 	result, err := handler.Call(message.Data)
 
 	if err != nil {
 		w.Logger.WithFields(message.ToLogFields()).Error(err)
-		if message.Try < w.Try {
+		if message.Try < w.try {
 			w.requeue(&message)
 		} else {
 			w.enqueueFailed(&message)
@@ -129,7 +130,7 @@ func (w *Worker) handle(msg string) {
 
 func (w *Worker) enqueueFailed(message *Message) {
 	bytes, _ := json.Marshal(*message)
-	w.Client.RPush(DefaultFailedQueue, string(bytes[:]))
+	w.client.RPush(DefaultFailedQueue, string(bytes[:]))
 }
 
 func (w *Worker) notify(message *Message, success bool, errMsg string, data interface{}) {
@@ -149,14 +150,14 @@ func (w *Worker) notify(message *Message, success bool, errMsg string, data inte
 	resp = string(bytes[:])
 	w.Logger.WithField("eventId", message.Id).Debug(resp)
 
-	w.Client.Set(message.Id, resp, 0)
+	w.client.Set(message.Id, resp, 0)
 }
 
 func (w *Worker) requeue(message *Message) {
 	message.Try += 1
 	message.Timestamp = time.Now().Unix()
 	bytes, _ := json.Marshal(*message)
-	w.Client.RPush(DefaultQueue, string(bytes[:]))
+	w.client.RPush(DefaultQueue, string(bytes[:]))
 }
 
 func (w *Worker) checkMessage(message *Message) bool {
@@ -172,7 +173,7 @@ func (w *Worker) checkMessage(message *Message) bool {
 		return checked
 	} else {
 		event := message.Event
-		_, ok := w.EventHandlers[event]
+		_, ok := w.eventHandlers[event]
 
 		if !ok {
 			checked = false

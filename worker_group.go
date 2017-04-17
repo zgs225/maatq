@@ -61,15 +61,15 @@ func (g *WorkerGroup) wait() {
 func (g *WorkerGroup) initWorkers() {
 	for i := 0; i < g.options.Parallel; i++ {
 		// 初始化Worker
-		c := &Worker{Try: g.options.Try, C: g.C, Id: i}
+		c := &Worker{try: g.options.Try, c: g.C, Id: i}
 		g.Workers[i] = c
 
-		c.Client = redis.NewClient(&redis.Options{
+		c.client = redis.NewClient(&redis.Options{
 			Addr:     g.options.Addr,
 			Password: g.options.Password,
 			DB:       0,
 		})
-		c.EventHandlers = make(map[string]EventHandler)
+		c.eventHandlers = make(map[string]EventHandler)
 		c.initLog()
 		c.checkConn()
 	}
@@ -86,10 +86,10 @@ func (g *WorkerGroup) handleSignals() {
 				var delay = false
 
 				for _, worker := range g.Workers {
-					worker.Mu.Lock()
-					defer worker.Mu.Unlock()
+					worker.mu.Lock()
+					defer worker.mu.Unlock()
 
-					if worker.CurrentMsg != nil {
+					if worker.currentMsg != nil {
 						delay = true
 					}
 				}
@@ -101,8 +101,8 @@ func (g *WorkerGroup) handleSignals() {
 				}
 
 				for _, worker := range g.Workers {
-					worker.PushBackCurrentMsg()
-					worker.Client.Close()
+					worker.pushBackCurrentMsg()
+					worker.client.Close()
 				}
 
 				os.Exit(0)
