@@ -11,9 +11,8 @@ import (
 )
 
 var (
-	EventAlreadyExists = errors.New("event already exists")
-	DefaultQueue       = "maatq:default"
-	DefaultFailedQueue = "maatq:default:failed"
+	ErrEventAlreadyExists = errors.New("event already exists")
+	DefaultFailedQueue    = "maatq:default:failed"
 )
 
 type EventHandler func(arg interface{}) (interface{}, error)
@@ -39,7 +38,7 @@ type Worker struct {
 
 func (w *Worker) AddEventHandler(event string, handler EventHandler) error {
 	if _, ok := w.eventHandlers[event]; ok {
-		return EventAlreadyExists
+		return ErrEventAlreadyExists
 	}
 	w.eventHandlers[event] = handler
 	return nil
