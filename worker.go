@@ -74,7 +74,7 @@ func (w *Worker) Work() {
 
 		w.Logger.WithFields(log.Fields{
 			"msg": result[1],
-		}).Debug("[%s] message recieved", result[0])
+		}).Debugf("[%s] message recieved", result[0])
 
 		cm, err := newHandlingMessage(result[0], result[1])
 		if err != nil {
