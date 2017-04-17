@@ -10,7 +10,7 @@ MaatQ
 
 ### 实现
 
-往名为`mataq:default`的Redis列表中写入消息。消息遵循以下协议:
+往名为`maatq:default`的Redis列表中写入消息。消息遵循以下协议:
 
 ``` json
 {

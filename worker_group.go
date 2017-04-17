@@ -1,4 +1,4 @@
-package mataq
+package maatq
 
 import (
 	"errors"
@@ -92,7 +92,7 @@ func (g *WorkerGroup) handleSignals() {
 				}
 
 				if delay {
-					log.Warn("Mataqd will exit after 5 seconds")
+					log.Warn("Maatqd will exit after 5 seconds")
 					timer := time.NewTimer(time.Second * 5)
 					<-timer.C
 				}

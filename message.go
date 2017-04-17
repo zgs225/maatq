@@ -1,4 +1,4 @@
-package mataq
+package maatq
 
 import (
 	log "github.com/Sirupsen/logrus"

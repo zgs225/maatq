@@ -1,4 +1,4 @@
-package mataq
+package maatq
 
 import (
 	"encoding/json"
@@ -12,8 +12,8 @@ import (
 
 var (
 	EventAlreadyExists = errors.New("event already exists")
-	DefaultQueue       = "mataq:default"
-	DefaultFailedQueue = "mataq:default:failed"
+	DefaultQueue       = "maatq:default"
+	DefaultFailedQueue = "maatq:default:failed"
 )
 
 type EventHandler func(arg interface{}) (interface{}, error)

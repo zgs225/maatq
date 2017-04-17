@@ -1,4 +1,4 @@
-package mataq
+package maatq
 
 import (
 	"encoding/json"
