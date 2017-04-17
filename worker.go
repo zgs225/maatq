@@ -33,7 +33,7 @@ type Worker struct {
 	try           int
 	c             chan int
 	mu            sync.Mutex
-	currentMsg    *string
+	cm            *handlingMessage
 }
 
 func (w *Worker) AddEventHandler(event string, handler EventHandler) error {
@@ -71,40 +71,47 @@ func (w *Worker) Work() {
 			w.Logger.Error(err)
 			continue
 		}
-		w.currentMsg = &(result[1])
-		w.mu.Lock()
 
 		w.Logger.WithFields(log.Fields{
 			"msg": result[1],
 		}).Debug("message recieved")
-		w.handle(result[1])
-		w.currentMsg = nil
-		w.mu.Unlock()
+
+		cm, err := newHandlingMessage(result[0], result[1])
+		if err != nil {
+			w.Logger.Error(err)
+			continue
+		}
+		w.cm = cm
+
+		w.processCurrentMsg()
 	}
 
 	// 这个代码永远不会运行到
 	// w.c <- 1
 }
 
+// 处理当前消息
+func (w *Worker) processCurrentMsg() {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	w.handle()
+	w.cm = nil
+}
+
 func (w *Worker) pushBackCurrentMsg() {
-	if w.currentMsg != nil {
-		w.client.LPush(DefaultQueue, *(w.currentMsg))
+	if w.cm != nil {
+		bytes, _ := json.Marshal(w.cm.Msg)
+		w.client.LPush(w.cm.Queue, bytes)
 	}
 }
 
-func (w *Worker) handle(msg string) {
+func (w *Worker) handle() {
 	var (
-		message Message
+		hm      *handlingMessage = w.cm
+		message Message          = *(hm.Msg)
 		handler EventHandler
 		event   string
 	)
-
-	err := json.Unmarshal([]byte(msg), &message)
-
-	if err != nil {
-		w.Logger.Errorf("json unmarshal error: %v", err)
-		return
-	}
 
 	if !w.checkMessage(&message) {
 		return
@@ -115,28 +122,32 @@ func (w *Worker) handle(msg string) {
 	result, err := handler.Call(message.Data)
 
 	if err != nil {
-		w.Logger.WithFields(message.ToLogFields()).Error(err)
+		w.cm.Error = err
+		w.cm.EndTime = time.Now()
+		w.Logger.WithFields(message.ToLogFields()).Errorf("[%.2fms] [%s]: %v", w.cm.microSeconds(), "fail", err)
 		if message.Try < w.try {
-			w.requeue(&message)
+			w.requeue()
 		} else {
-			w.enqueueFailed(&message)
+			w.enqueueFailed()
 		}
-		w.notify(&message, false, err.Error(), nil)
+		w.notify(false, err.Error(), nil)
 	} else {
-		w.Logger.WithFields(message.ToLogFields()).Info("success")
-		w.notify(&message, true, "", result)
+		w.cm.EndTime = time.Now()
+		w.Logger.WithFields(message.ToLogFields()).Infof("[%.2fms] [%s]", w.cm.microSeconds(), "ok")
+		w.notify(true, "", result)
 	}
 }
 
-func (w *Worker) enqueueFailed(message *Message) {
-	bytes, _ := json.Marshal(*message)
+func (w *Worker) enqueueFailed() {
+	bytes, _ := json.Marshal(w.cm.Msg)
 	w.client.RPush(DefaultFailedQueue, string(bytes[:]))
 }
 
-func (w *Worker) notify(message *Message, success bool, errMsg string, data interface{}) {
+func (w *Worker) notify(success bool, errMsg string, data interface{}) {
 	var (
-		jResp map[string]interface{}
-		resp  string
+		message *Message = w.cm.Msg
+		jResp   map[string]interface{}
+		resp    string
 	)
 
 	jResp = map[string]interface{}{
@@ -153,11 +164,12 @@ func (w *Worker) notify(message *Message, success bool, errMsg string, data inte
 	w.client.Set(message.Id, resp, 0)
 }
 
-func (w *Worker) requeue(message *Message) {
+func (w *Worker) requeue() {
+	message := w.cm.Msg
 	message.Try += 1
 	message.Timestamp = time.Now().Unix()
-	bytes, _ := json.Marshal(*message)
-	w.client.RPush(DefaultQueue, string(bytes[:]))
+	bytes, _ := json.Marshal(message)
+	w.client.RPush(DefaultQueue, string(bytes))
 }
 
 func (w *Worker) checkMessage(message *Message) bool {

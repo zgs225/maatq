@@ -89,7 +89,7 @@ func (g *WorkerGroup) handleSignals() {
 					worker.mu.Lock()
 					defer worker.mu.Unlock()
 
-					if worker.currentMsg != nil {
+					if worker.cm != nil {
 						delay = true
 					}
 				}
