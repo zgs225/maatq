@@ -27,6 +27,7 @@ type GroupOptions struct {
 	Addr     string
 	Password string
 	Try      int
+	Queues   []string
 }
 
 type WorkerGroup struct {
@@ -63,6 +64,10 @@ func (g *WorkerGroup) initWorkers() {
 		// 初始化Worker
 		c := &Worker{try: g.options.Try, c: g.C, Id: i}
 		g.Workers[i] = c
+
+		for _, q := range g.options.Queues {
+			c.queues = append(c.queues, "maatq:"+q)
+		}
 
 		c.client = redis.NewClient(&redis.Options{
 			Addr:     g.options.Addr,
@@ -119,6 +124,10 @@ func NewWorkerGroup(opt *GroupOptions) (*WorkerGroup, error) {
 
 	if opt.Parallel == 0 {
 		opt.Parallel = runtime.NumCPU()
+	}
+
+	if len(opt.Queues) == 0 {
+		return nil, errors.New("No queues for listening")
 	}
 
 	ptr := &WorkerGroup{

@@ -34,6 +34,7 @@ type Worker struct {
 	c             chan int
 	mu            sync.Mutex
 	cm            *handlingMessage
+	queues        []string
 }
 
 func (w *Worker) AddEventHandler(event string, handler EventHandler) error {
@@ -58,7 +59,7 @@ func (w *Worker) checkConn() {
 func (w *Worker) initLog() {
 	w.Logger = log.WithFields(log.Fields{
 		"workerId": w.Id,
-		"queue":    DefaultQueue,
+		"queues":   w.queues,
 	})
 }
 
@@ -66,7 +67,7 @@ func (w *Worker) Work() {
 	w.Logger.WithField("try", w.try).Info("worker started")
 
 	for {
-		result, err := w.client.BLPop(0, DefaultQueue).Result()
+		result, err := w.client.BLPop(0, w.queues...).Result()
 		if err != nil {
 			w.Logger.Error(err)
 			continue
@@ -74,7 +75,7 @@ func (w *Worker) Work() {
 
 		w.Logger.WithFields(log.Fields{
 			"msg": result[1],
-		}).Debug("message recieved")
+		}).Debug("[%s] message recieved", result[0])
 
 		cm, err := newHandlingMessage(result[0], result[1])
 		if err != nil {
@@ -169,7 +170,7 @@ func (w *Worker) requeue() {
 	message.Try += 1
 	message.Timestamp = time.Now().Unix()
 	bytes, _ := json.Marshal(message)
-	w.client.RPush(DefaultQueue, string(bytes))
+	w.client.RPush(w.cm.Queue, string(bytes))
 }
 
 func (w *Worker) checkMessage(message *Message) bool {
