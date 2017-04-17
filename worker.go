@@ -124,7 +124,7 @@ func (w *Worker) handle() {
 	if err != nil {
 		w.cm.Error = err
 		w.cm.EndTime = time.Now()
-		w.Logger.WithFields(message.ToLogFields()).Errorf("[%.2fms] [%s]: %v", w.cm.microSeconds(), "fail", err)
+		w.Logger.WithFields(message.ToLogFields()).Errorf("[%.2fms] [%s]: %v", w.cm.milliSeconds(), "fail", err)
 		if message.Try < w.try {
 			w.requeue()
 		} else {
@@ -133,7 +133,7 @@ func (w *Worker) handle() {
 		w.notify(false, err.Error(), nil)
 	} else {
 		w.cm.EndTime = time.Now()
-		w.Logger.WithFields(message.ToLogFields()).Infof("[%.2fms] [%s]", w.cm.microSeconds(), "ok")
+		w.Logger.WithFields(message.ToLogFields()).Infof("[%.2fms] [%s]", w.cm.milliSeconds(), "ok")
 		w.notify(true, "", result)
 	}
 }
