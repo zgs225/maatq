@@ -81,7 +81,8 @@ func (w *Worker) Work() {
 		w.Mu.Unlock()
 	}
 
-	w.C <- 1
+	// 这个代码永远不会运行到
+	// w.C <- 1
 }
 
 func (w *Worker) PushBackCurrentMsg() {
