@@ -56,7 +56,7 @@ func newHandlingMessage(queue, msg string) (*handlingMessage, error) {
 // 获取开始和结束的毫秒
 func (hm *handlingMessage) milliSeconds() float64 {
 	d := hm.EndTime.Sub(hm.StartTime)
-	ms := d / time.Microsecond
-	nsec := d % time.Microsecond
+	ms := d / time.Millisecond
+	nsec := d % time.Millisecond
 	return float64(ms) + float64(nsec)/(1e6)
 }
