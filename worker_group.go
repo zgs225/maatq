@@ -19,7 +19,7 @@ func init() {
 }
 
 var (
-	ParallelError = errors.New("parallel should gte 0")
+	ErrParallel = errors.New("parallel should gte 0")
 )
 
 type GroupOptions struct {
@@ -119,7 +119,7 @@ func (g *WorkerGroup) handleSignals() {
 // 获取监听队列的 Group
 func NewWorkerGroup(opt *GroupOptions) (*WorkerGroup, error) {
 	if opt.Parallel < 0 {
-		return nil, ParallelError
+		return nil, ErrParallel
 	}
 
 	if opt.Parallel == 0 {
