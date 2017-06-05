@@ -1,8 +1,9 @@
 package maatq
 
 import (
-	log "github.com/Sirupsen/logrus"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // 根据时间调度的消息
