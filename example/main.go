@@ -61,7 +61,15 @@ func main() {
 			Try:       0,
 			Data:      fmt.Sprintf("yuez %d", i),
 		}
-		d := time.Duration(i+1) * time.Second
+
+		var t time.Duration
+		if i%3 == 0 {
+			t = time.Second
+		} else {
+			t = time.Minute
+		}
+
+		d := time.Duration(i+1) * t
 		s.Delay(m, d)
 	}
 
