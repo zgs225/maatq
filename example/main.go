@@ -4,8 +4,10 @@ import (
 	"flag"
 	"fmt"
 	"runtime"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/google/uuid"
 	"github.com/zgs225/maatq"
 )
 
@@ -14,7 +16,7 @@ var (
 	parallel = flag.Int("parallel", runtime.NumCPU(), "同时执行队列任务的并发数")
 	addr     = flag.String("addr", "localhost:6379", "Redis主机和端口")
 	password = flag.String("password", "", "Redis密码")
-	debug    = flag.Bool("debug", false, "是否开启Debug")
+	debug    = flag.Bool("debug", true, "是否开启Debug")
 )
 
 func SayHello(arg interface{}) (interface{}, error) {
@@ -43,7 +45,27 @@ func main() {
 		log.Panic(err)
 	}
 
-	group.AddEventHandler("hello", maatq.EventHandler(SayHello))
+	c := make(chan int)
 
-	group.ServeLoop()
+	group.AddEventHandler("hello", maatq.EventHandler(SayHello))
+	go group.ServeLoop()
+
+	s := maatq.NewDefaultScheduler(*addr, *password)
+
+	for i := 0; i < 10; i++ {
+		u := uuid.New()
+		m := &maatq.Message{
+			Id:        u.String(),
+			Event:     "hello",
+			Timestamp: time.Now().Unix(),
+			Try:       0,
+			Data:      fmt.Sprintf("yuez %d", i),
+		}
+		d := time.Duration(i+1) * time.Second
+		s.Delay(m, d)
+	}
+
+	go s.ServeLoop()
+
+	<-c
 }

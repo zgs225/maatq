@@ -13,6 +13,7 @@ import (
 var (
 	ErrEventAlreadyExists = errors.New("event already exists")
 	DefaultFailedQueue    = "maatq:default:failed"
+	DefaultQueue          = "maatq:default"
 )
 
 type EventHandler func(arg interface{}) (interface{}, error)
@@ -63,7 +64,7 @@ func (w *Worker) initLog() {
 }
 
 func (w *Worker) Work() {
-	w.Logger.WithField("try", w.try).Info("worker started")
+	w.Logger.WithField("try", w.try).Info("Worker started")
 
 	for {
 		result, err := w.client.BLPop(0, w.queues...).Result()
