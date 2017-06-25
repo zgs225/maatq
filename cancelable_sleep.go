@@ -15,6 +15,7 @@ func (cs *cancelSleep) Sleep(d time.Duration) {
 		atomic.StoreInt32(&cs.flag, 1)
 		go func() { time.AfterFunc(d, cs.Cancel) }()
 		<-cs.quit
+		atomic.StoreInt32(&cs.flag, 0)
 	}
 }
 
