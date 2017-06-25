@@ -23,6 +23,7 @@ type scheduler struct {
 	lastSyncTime time.Time
 	isRunning    bool
 	r            *redis.Client
+	csleep       *cancelSleep
 }
 
 func (s *scheduler) SetInterval(v time.Duration) {
@@ -44,7 +45,7 @@ func (s *scheduler) ServeLoop() {
 
 		if int64(d) > 0 {
 			s.logger.Debugf("Waking up in %s", d.String())
-			time.Sleep(d)
+			s.csleep.Sleep(d)
 		}
 
 		if s.shouldSync() {
@@ -120,5 +121,6 @@ func NewDefaultScheduler(addr, password string) *scheduler {
 			Password: password,
 			DB:       0,
 		}),
+		csleep: newCancelSleep(),
 	}
 }
