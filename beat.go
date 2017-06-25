@@ -59,6 +59,7 @@ func (s *scheduler) Delay(m *Message, d time.Duration) {
 	t := time.Now().Add(d)
 	pm := &PriorityMessage{*m, t.Unix()}
 	heap.Push(s.heap, pm)
+	s.csleep.Cancel()
 }
 
 // Run a tick, one iteration of the scheduler, executes one due task per call.
