@@ -218,29 +218,28 @@ func (p *cronParser) Match(t cronTokenType) error {
 }
 
 // */2 形式的结构
-func (p *cronParser) stepedAsterisk() (*cronToken, *cronToken, *cronToken, error) {
+// 返回 step cron token, error
+func (p *cronParser) stepedAsterisk() (*cronToken, error) {
 	if err := p.Match(cronTokenTypes_Asterisk); err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	asterisk, err := p.Consume()
-	if err != nil {
-		return nil, nil, nil, err
+	if _, err := p.Consume(); err != nil {
+		return nil, err
 	}
 	if err := p.Match(cronTokenTypes_Slash); err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	slash, err := p.Consume()
-	if err != nil {
-		return nil, nil, nil, err
+	if _, err := p.Consume(); err != nil {
+		return nil, err
 	}
 	if err := p.Match(cronTokenTypes_Number); err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 	num, err := p.Consume()
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
-	return asterisk, slash, num, nil
+	return num, nil
 }
 
 func (p *cronParser) asterisk() (*cronToken, error) {
@@ -250,12 +249,53 @@ func (p *cronParser) asterisk() (*cronToken, error) {
 	return p.Consume()
 }
 
+// 10-30/2
+// 返回 begin, end, step cron token
+func (p *cronParser) stepedRange() (*cronToken, *cronToken, *cronToken, error) {
+	if err := p.Match(cronTokenTypes_Number); err != nil {
+		return nil, nil, nil, err
+	}
+	begin, err := p.Consume()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if err := p.Match(cronTokenTypes_Hyphen); err != nil {
+		return nil, nil, nil, err
+	}
+	_, err = p.Consume()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if err := p.Match(cronTokenTypes_Number); err != nil {
+		return nil, nil, nil, err
+	}
+	end, err := p.Consume()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if err := p.Match(cronTokenTypes_Slash); err != nil {
+		return nil, nil, nil, err
+	}
+	_, err = p.Consume()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if err := p.Match(cronTokenTypes_Number); err != nil {
+		return nil, nil, nil, err
+	}
+	step, err := p.Consume()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return begin, end, step, nil
+}
+
 func (p *cronParser) parseMinutes(cron *Crontab) error {
 	head := p.L(0)
 	// 当分钟是 *
 	if head.t == cronTokenTypes_Asterisk {
 		if p.L(1).t == cronTokenTypes_Slash { // 当分钟是 */2 类似的模式
-			_, _, token, err := p.stepedAsterisk()
+			token, err := p.stepedAsterisk()
 			if err != nil {
 				return err
 			}
@@ -275,34 +315,20 @@ func (p *cronParser) parseMinutes(cron *Crontab) error {
 	} else if head.t == cronTokenTypes_Number {
 		if p.L(1).t == cronTokenTypes_Hyphen { // 当分钟是 0-59
 			if p.L(3).t == cronTokenTypes_Slash { // 是 0-59/3
-				if err := p.Match(cronTokenTypes_Number); err != nil {
-					return err
-				}
-				t1, err := p.Consume()
+				begin, end, step, err := p.stepedRange()
 				if err != nil {
 					return err
 				}
-				v1, err := t1.IntVal()
+				v1, err := begin.IntVal()
+				if err != nil {
+					return err
+				}
+				v2, err := end.IntVal()
 				if err != nil {
 					return err
 				}
 				if v1 < 0 || v1 > 59 {
 					return fmt.Errorf("语法错误: 分钟取值范围是0-59, 实际: %d", v1)
-				}
-				if err := p.Match(cronTokenTypes_Hyphen); err != nil {
-					return err
-				}
-				p.Consume()
-				if err := p.Match(cronTokenTypes_Number); err != nil {
-					return err
-				}
-				t2, err := p.Consume()
-				if err != nil {
-					return err
-				}
-				v2, err := t2.IntVal()
-				if err != nil {
-					return err
 				}
 				if v2 < 0 || v2 > 59 {
 					return fmt.Errorf("语法错误: 分钟取值范围是0-59, 实际: %d", v2)
@@ -310,18 +336,7 @@ func (p *cronParser) parseMinutes(cron *Crontab) error {
 				if v1 > v2 {
 					return fmt.Errorf("语法错误: 分钟取值范围错误, 实际: %d-%d", v1, v2)
 				}
-				if err := p.Match(cronTokenTypes_Slash); err != nil {
-					return err
-				}
-				p.Consume()
-				if err := p.Match(cronTokenTypes_Number); err != nil {
-					return err
-				}
-				t3, err := p.Consume()
-				if err != nil {
-					return err
-				}
-				v3, err := t3.IntVal()
+				v3, err := step.IntVal()
 				if err != nil {
 					return nil
 				}
