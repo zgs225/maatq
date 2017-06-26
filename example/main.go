@@ -60,11 +60,13 @@ func main() {
 		Try:       0,
 		Data:      "Hello period",
 	}
-
 	p, _ := maatq.NewPeriod(3)
-	s.Period(m, p)
 
 	go s.ServeLoop()
 
+	s.Period(m, p)
+	m.Data = "Hello delay....."
+	time.Sleep(10 * time.Second)
+	s.Delay(m, time.Second*4)
 	<-c
 }
