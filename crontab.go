@@ -413,7 +413,12 @@ func (p *cronParser) parseMinutes(cron *Crontab) error {
 				cron.minutes = makeRangeOfInt8(int8(v1), int8(v2), 1)
 			}
 		} else if p.L(1).t == cronTokenTypes_Comma { // 当分钟是 0,13,20
-			return p.list(cron)
+			var minutes []int8
+			if err := p.list(&minutes); err != nil {
+				return err
+			}
+			cron.minutes = minutes
+			return nil
 		} else { // 单纯的数字
 			v, err := p.number()
 			if err != nil {
@@ -432,7 +437,7 @@ func (p *cronParser) parseMinutes(cron *Crontab) error {
 	}
 }
 
-func (p *cronParser) list(cron *Crontab) error {
+func (p *cronParser) list(container *[]int8) error {
 	if err := p.Match(cronTokenTypes_Number); err != nil {
 		return err
 	}
@@ -451,10 +456,10 @@ func (p *cronParser) list(cron *Crontab) error {
 		return err
 	}
 	p.Consume()
-	cron.minutes = append(cron.minutes, int8(v1))
+	*container = append(*container, int8(v1))
 
 	if p.L(1).t == cronTokenTypes_Comma { // Remain list
-		return p.list(cron)
+		return p.list(container)
 	} else {
 		if err := p.Match(cronTokenTypes_Number); err != nil {
 			return err
@@ -470,7 +475,7 @@ func (p *cronParser) list(cron *Crontab) error {
 		if v2 < 0 || v2 > 59 {
 			return fmt.Errorf("语法错误: 分钟取值范围是0-59, 实际: %d", v2)
 		}
-		cron.minutes = append(cron.minutes, int8(v2))
+		*container = append(*container, int8(v2))
 		return nil
 	}
 }
