@@ -218,28 +218,32 @@ func (p *cronParser) Match(t cronTokenType) error {
 }
 
 // */2 形式的结构
-// 返回 step cron token, error
-func (p *cronParser) stepedAsterisk() (*cronToken, error) {
+// 返回 step int, error
+func (p *cronParser) stepedAsterisk() (int, error) {
 	if err := p.Match(cronTokenTypes_Asterisk); err != nil {
-		return nil, err
+		return 0, err
 	}
 	if _, err := p.Consume(); err != nil {
-		return nil, err
+		return 0, err
 	}
 	if err := p.Match(cronTokenTypes_Slash); err != nil {
-		return nil, err
+		return 0, err
 	}
 	if _, err := p.Consume(); err != nil {
-		return nil, err
+		return 0, err
 	}
 	if err := p.Match(cronTokenTypes_Number); err != nil {
-		return nil, err
+		return 0, err
 	}
 	num, err := p.Consume()
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	return num, nil
+	step, err := num.IntVal()
+	if err != nil {
+		return 0, err
+	}
+	return step, nil
 }
 
 // *
@@ -362,11 +366,7 @@ func (p *cronParser) parseMinutes(cron *Crontab) error {
 	// 当分钟是 *
 	if head.t == cronTokenTypes_Asterisk {
 		if p.L(1).t == cronTokenTypes_Slash { // 当分钟是 */2 类似的模式
-			token, err := p.stepedAsterisk()
-			if err != nil {
-				return err
-			}
-			step, err := token.IntVal()
+			step, err := p.stepedAsterisk()
 			if err != nil {
 				return err
 			}
