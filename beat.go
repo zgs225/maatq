@@ -57,7 +57,15 @@ func (s *scheduler) ServeLoop() {
 // Delay a message in give duration
 func (s *scheduler) Delay(m *Message, d time.Duration) {
 	t := time.Now().Add(d)
-	pm := &PriorityMessage{*m, t.Unix()}
+	pm := &PriorityMessage{*m, t.Unix(), nil}
+	heap.Push(s.heap, pm)
+	s.csleep.Cancel()
+}
+
+// 添加周期执行的任务
+func (s *scheduler) Period(m *Message, p Periodicor) {
+	t := p.Next()
+	pm := &PriorityMessage{*m, t.Unix(), p}
 	heap.Push(s.heap, pm)
 	s.csleep.Cancel()
 }
@@ -80,6 +88,10 @@ func (s *scheduler) tick() (time.Duration, error) {
 		}
 		s.logger.WithField("msg", string(b)).Debugf("Priority message push to queue %s", DefaultQueue)
 		s.r.RPush(DefaultQueue, string(b))
+		if m.IsPeriodic() {
+			m.T = m.P.Next().Unix()
+			heap.Push(s.heap, m)
+		}
 		return time.Duration(0), nil
 	} else {
 		d := time.Unix(m.T, 0).Sub(time.Now())

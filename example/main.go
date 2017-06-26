@@ -52,26 +52,17 @@ func main() {
 
 	s := maatq.NewDefaultScheduler(*addr, *password)
 
-	for i := 0; i < 10; i++ {
-		u := uuid.New()
-		m := &maatq.Message{
-			Id:        u.String(),
-			Event:     "hello",
-			Timestamp: time.Now().Unix(),
-			Try:       0,
-			Data:      fmt.Sprintf("yuez %d", i),
-		}
-
-		var t time.Duration
-		if i%3 == 0 {
-			t = time.Second
-		} else {
-			t = time.Minute
-		}
-
-		d := time.Duration(i+1) * t
-		s.Delay(m, d)
+	u := uuid.New()
+	m := &maatq.Message{
+		Id:        u.String(),
+		Event:     "hello",
+		Timestamp: time.Now().Unix(),
+		Try:       0,
+		Data:      "Hello period",
 	}
+
+	p, _ := maatq.NewPeriod(3)
+	s.Period(m, p)
 
 	go s.ServeLoop()
 

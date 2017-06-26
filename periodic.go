@@ -1,7 +1,12 @@
 package maatq
 
 import (
+	"errors"
 	"time"
+)
+
+var (
+	ErrNotPositive = errors.New("周期只能是正数")
 )
 
 type Periodicor interface {
@@ -11,6 +16,16 @@ type Periodicor interface {
 type Period struct {
 	Begin time.Time // 周期的开始时间
 	Cycle int64     // 秒为单位
+}
+
+func NewPeriod(seconds int64) (*Period, error) {
+	if seconds <= 0 {
+		return nil, ErrNotPositive
+	}
+	return &Period{
+		Begin: time.Now(),
+		Cycle: seconds,
+	}, nil
 }
 
 func (p *Period) Next() time.Time {

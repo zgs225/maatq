@@ -9,11 +9,16 @@ import (
 // 根据时间调度的消息
 type PriorityMessage struct {
 	Message
-	T int64 `json:"t"` // 下一次执行的时间
+	T int64      `json:"t"` // 下一次执行的时间
+	P Periodicor `json:"p"` // 周期
 }
 
 func (pm *PriorityMessage) IsDue() bool {
 	return time.Now().Unix() >= pm.T
+}
+
+func (pm *PriorityMessage) IsPeriodic() bool {
+	return pm.P != nil
 }
 
 func (pm *PriorityMessage) ToLogFields() log.Fields {
