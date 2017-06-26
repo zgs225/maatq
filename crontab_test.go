@@ -292,3 +292,9 @@ func TestCrontab(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkCrontab(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		NewCrontab("* * * * *")
+	}
+}
