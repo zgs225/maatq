@@ -9,12 +9,12 @@ import (
 )
 
 type Crontab struct {
-	minutes    []int8 // 0 - 59
-	hour       []int8 // 0 - 23
-	dayOfMonth []int8 // 0 - 31
-	month      []int8 // 0 - 12
-	dayOfWeek  []int8 // 0 - 7 (0或者7是周日, 或者使用名字)
-	text       string // Cron字符串
+	minutes     []int8 // 0 - 59
+	hours       []int8 // 0 - 23
+	daysOfMonth []int8 // 0 - 31
+	months      []int8 // 0 - 12
+	daysOfWeek  []int8 // 0 - 7 (0或者7是周日, 或者使用名字)
+	text        string // Cron字符串
 }
 
 type cronTokenType int32
@@ -217,20 +217,38 @@ func (p *cronParser) Match(t cronTokenType) error {
 	return nil
 }
 
+// */2 形式的结构
+func (p *cronParser) stepedAsterisk() (*cronToken, *cronToken, *cronToken, error) {
+	if err := p.Match(cronTokenTypes_Asterisk); err != nil {
+		return nil, nil, nil, err
+	}
+	asterisk, err := p.Consume()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if err := p.Match(cronTokenTypes_Slash); err != nil {
+		return nil, nil, nil, err
+	}
+	slash, err := p.Consume()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	if err := p.Match(cronTokenTypes_Number); err != nil {
+		return nil, nil, nil, err
+	}
+	num, err := p.Consume()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return asterisk, slash, num, nil
+}
+
 func (p *cronParser) parseMinutes(cron *Crontab) error {
 	head := p.L(0)
 	// 当分钟是 *
 	if head.t == cronTokenTypes_Asterisk {
 		if p.L(1).t == cronTokenTypes_Slash { // 当分钟是 */2 类似的模式
-			p.Match(cronTokenTypes_Asterisk)
-			p.Consume()
-			p.Match(cronTokenTypes_Slash)
-			p.Consume()
-			err := p.Match(cronTokenTypes_Number)
-			if err != nil {
-				return err
-			}
-			token, err := p.Consume()
+			_, _, token, err := p.stepedAsterisk()
 			if err != nil {
 				return err
 			}
@@ -425,7 +443,9 @@ func newCronParser(lexer *cronLexer, cap int32) (*cronParser, error) {
 
 // 将Crontab的字符串解析成*Crontab实例
 func NewCrontab(cron string) (*Crontab, error) {
-	var v Crontab
+	var v = Crontab{
+		text: cron,
+	}
 
 	lexer := newCronLexer(cron)
 	parser, err := newCronParser(lexer, 5)
