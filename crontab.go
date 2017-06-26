@@ -292,28 +292,36 @@ func (p *cronParser) stepedRange() (*cronToken, *cronToken, *cronToken, error) {
 
 // 10-30
 // 返回 begin, end cron token
-func (p *cronParser) cronRange() (*cronToken, *cronToken, error) {
+func (p *cronParser) cronRange() (int, int, error) {
 	if err := p.Match(cronTokenTypes_Number); err != nil {
-		return nil, nil, err
+		return 0, 0, err
 	}
 	begin, err := p.Consume()
 	if err != nil {
-		return nil, nil, err
+		return 0, 0, err
+	}
+	v1, err := begin.IntVal()
+	if err != nil {
+		return 0, 0, err
 	}
 	if err := p.Match(cronTokenTypes_Hyphen); err != nil {
-		return nil, nil, err
+		return 0, 0, err
 	}
 	if _, err := p.Consume(); err != nil {
-		return nil, nil, err
+		return 0, 0, err
 	}
 	if err := p.Match(cronTokenTypes_Number); err != nil {
-		return nil, nil, err
+		return 0, 0, err
 	}
 	end, err := p.Consume()
 	if err != nil {
-		return nil, nil, err
+		return 0, 0, err
 	}
-	return begin, end, nil
+	v2, err := end.IntVal()
+	if err != nil {
+		return 0, 0, err
+	}
+	return v1, v2, nil
 }
 
 // 3
@@ -380,20 +388,12 @@ func (p *cronParser) parseMinutes(cron *Crontab) error {
 				}
 				cron.minutes = makeRangeOfInt8(int8(v1), int8(v2), v3)
 			} else {
-				begin, end, err := p.cronRange()
-				if err != nil {
-					return err
-				}
-				v1, err := begin.IntVal()
+				v1, v2, err := p.cronRange()
 				if err != nil {
 					return err
 				}
 				if v1 < 0 || v1 > 59 {
 					return fmt.Errorf("语法错误: 分钟取值范围是0-59, 实际: %d", v1)
-				}
-				v2, err := end.IntVal()
-				if err != nil {
-					return err
 				}
 				if v2 < 0 || v2 > 59 {
 					return fmt.Errorf("语法错误: 分钟取值范围是0-59, 实际: %d", v2)
