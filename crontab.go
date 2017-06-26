@@ -242,11 +242,15 @@ func (p *cronParser) stepedAsterisk() (*cronToken, error) {
 	return num, nil
 }
 
-func (p *cronParser) asterisk() (*cronToken, error) {
+// *
+func (p *cronParser) asterisk() error {
 	if err := p.Match(cronTokenTypes_Asterisk); err != nil {
-		return nil, err
+		return err
 	}
-	return p.Consume()
+	if _, err := p.Consume(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // 10-30/2
@@ -352,7 +356,7 @@ func (p *cronParser) parseMinutes(cron *Crontab) error {
 			cron.minutes = makeRangeOfInt8(int8(0), int8(59), step)
 			return nil
 		} else { // 当分钟是 *
-			if _, err := p.asterisk(); err != nil {
+			if err := p.asterisk(); err != nil {
 				return err
 			}
 			cron.minutes = makeRangeOfInt8(int8(0), int8(59), 1)
