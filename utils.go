@@ -39,3 +39,11 @@ func AtoString(val interface{}) (string, error) {
 func GetFunctionName(i interface{}) string {
 	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }
+
+func makeRangeOfInt8(min, max int8, step int) []int8 {
+	s := make([]int8, 0)
+	for i := min; i <= max; i += int8(step) {
+		s = append(s, i)
+	}
+	return s
+}
