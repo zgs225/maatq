@@ -5,7 +5,25 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"unicode"
+)
+
+var (
+	cronMonthMap = map[string]int8{
+		"jan": 1,
+		"feb": 2,
+		"mar": 3,
+		"apr": 4,
+		"may": 5,
+		"jun": 6,
+		"jul": 7,
+		"aug": 8,
+		"sep": 9,
+		"oct": 10,
+		"nov": 11,
+		"dec": 12,
+	}
 )
 
 type Crontab struct {
@@ -57,6 +75,10 @@ type cronToken struct {
 
 func (t *cronToken) IntVal() (int, error) {
 	return strconv.Atoi(string(t.v))
+}
+
+func (t *cronToken) StrVal() string {
+	return string(t.v)
 }
 
 type cronLexer struct {
@@ -209,6 +231,9 @@ func (p *cronParser) Parse(cron *Crontab) error {
 		return err
 	}
 	if err := p.parseDaysOfMonth(cron); err != nil {
+		return err
+	}
+	if err := p.parseMonths(cron); err != nil {
 		return err
 	}
 	return nil
@@ -367,6 +392,18 @@ func (p *cronParser) number() (int, error) {
 	return token.IntVal()
 }
 
+// Jan
+func (p *cronParser) word() (string, error) {
+	if err := p.Match(cronTokenTypes_Word); err != nil {
+		return "", err
+	}
+	token, err := p.Consume()
+	if err != nil {
+		return "", err
+	}
+	return token.StrVal(), nil
+}
+
 func (p *cronParser) parseMinutes(cron *Crontab) error {
 	head := p.L(0)
 	// 当分钟是 *
@@ -511,6 +548,93 @@ func (p *cronParser) parseHours(cron *Crontab) error {
 			}
 			cron.hours = []int8{int8(v)}
 		}
+		return nil
+	} else {
+		return fmt.Errorf("语法错误: 应该是%s或者%s，实际: %s，值: %s",
+			cronTokenTypes_Asterisk.TokenName(), cronTokenTypes_Number.TokenName(),
+			head.t.TokenName(), string(head.v))
+	}
+}
+
+func (p *cronParser) parseMonths(cron *Crontab) error {
+	head := p.L(0)
+	// *
+	if head.t == cronTokenTypes_Asterisk {
+		if p.L(1).t == cronTokenTypes_Slash { // */2 类似的模式
+			step, err := p.stepedAsterisk()
+			if err != nil {
+				return err
+			}
+			cron.months = makeRangeOfInt8(int8(0), int8(12), step)
+			return nil
+		} else { // *
+			if err := p.asterisk(); err != nil {
+				return err
+			}
+			cron.months = makeRangeOfInt8(int8(0), int8(12), 1)
+			return nil
+		}
+	} else if head.t == cronTokenTypes_Number {
+		if p.L(1).t == cronTokenTypes_Hyphen { // 0-59
+			if p.L(3).t == cronTokenTypes_Slash { // 0-59/3
+				v1, v2, v3, err := p.stepedRange()
+				if err != nil {
+					return err
+				}
+				if v1 < 0 || v1 > 12 {
+					return fmt.Errorf("语法错误: 月取值范围是0-12, 实际: %d", v1)
+				}
+				if v2 < 0 || v2 > 12 {
+					return fmt.Errorf("语法错误: 月取值范围是0-12, 实际: %d", v2)
+				}
+				if v1 > v2 {
+					return fmt.Errorf("语法错误: 月取值范围错误, 实际: %d-%d", v1, v2)
+				}
+				cron.months = makeRangeOfInt8(int8(v1), int8(v2), v3)
+			} else {
+				v1, v2, err := p.cronRange()
+				if err != nil {
+					return err
+				}
+				if v1 < 0 || v1 > 12 {
+					return fmt.Errorf("语法错误: 月取值范围是0-12, 实际: %d", v1)
+				}
+				if v2 < 0 || v2 > 12 {
+					return fmt.Errorf("语法错误: 月取值范围是0-12, 实际: %d", v2)
+				}
+				if v1 > v2 {
+					return fmt.Errorf("语法错误: 月取值范围错误, 实际: %d-%d", v1, v2)
+				}
+				cron.months = makeRangeOfInt8(int8(v1), int8(v2), 1)
+			}
+		} else if p.L(1).t == cronTokenTypes_Comma { // 0,13,20
+			var months []int8
+			if err := p.list(&months); err != nil {
+				return err
+			}
+			cron.months = months
+			return nil
+		} else { // 单纯的数字
+			v, err := p.number()
+			if err != nil {
+				return err
+			}
+			if v < 0 || v > 31 {
+				return fmt.Errorf("语法错误: 月取值范围是0-12, 实际: %d", v)
+			}
+			cron.months = []int8{int8(v)}
+		}
+		return nil
+	} else if head.t == cronTokenTypes_Word {
+		v, err := p.word()
+		if err != nil {
+			return err
+		}
+		n, ok := cronMonthMap[strings.ToLower(v)]
+		if !ok {
+			return fmt.Errorf("语法错误: 月名称错误，实际: %s", v)
+		}
+		cron.months = []int8{int8(n)}
 		return nil
 	} else {
 		return fmt.Errorf("语法错误: 应该是%s或者%s，实际: %s，值: %s",

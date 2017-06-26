@@ -1,6 +1,7 @@
 package maatq
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -101,10 +102,14 @@ func TestCrontab(t *testing.T) {
 		if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
 			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
 		}
+		months := makeRangeOfInt8(int8(0), int8(12), 1)
+		if !reflect.DeepEqual(cron.months, months) {
+			t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+		}
 	}
 
 	{
-		s := "*/3 */2 */4 * *"
+		s := "*/3 */2 */4 */3 *"
 		cron, err := NewCrontab(s)
 		if err != nil {
 			t.Error(s, err)
@@ -121,10 +126,14 @@ func TestCrontab(t *testing.T) {
 		if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
 			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
 		}
+		months := makeRangeOfInt8(int8(0), int8(12), 3)
+		if !reflect.DeepEqual(cron.months, months) {
+			t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+		}
 	}
 
 	{
-		s := "13 21 18 * *"
+		s := "13 21 18 10 *"
 		cron, err := NewCrontab(s)
 		if err != nil {
 			t.Error(s, err)
@@ -141,10 +150,14 @@ func TestCrontab(t *testing.T) {
 		if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
 			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
 		}
+		months := []int8{int8(10)}
+		if !reflect.DeepEqual(cron.months, months) {
+			t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+		}
 	}
 
 	{
-		s := "0,5,15,20 0,12,23 1,3,5 * *"
+		s := "0,5,15,20 0,12,23 1,3,5 1,4,7,10 *"
 		cron, err := NewCrontab(s)
 		if err != nil {
 			t.Error(s, err)
@@ -161,10 +174,14 @@ func TestCrontab(t *testing.T) {
 		if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
 			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
 		}
+		months := []int8{int8(1), int8(4), int8(7), int8(10)}
+		if !reflect.DeepEqual(cron.months, months) {
+			t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+		}
 	}
 
 	{
-		s := "0-20 9-17 1-13 * *"
+		s := "0-20 9-17 1-13 1-6 *"
 		cron, err := NewCrontab(s)
 		if err != nil {
 			t.Error(s, err)
@@ -181,10 +198,14 @@ func TestCrontab(t *testing.T) {
 		if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
 			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
 		}
+		months := makeRangeOfInt8(int8(1), int8(6), 1)
+		if !reflect.DeepEqual(cron.months, months) {
+			t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+		}
 	}
 
 	{
-		s := "0-20/3 1-12/2 2-30/5 * *"
+		s := "0-20/3 1-12/2 2-30/5 1-6/2 *"
 		cron, err := NewCrontab(s)
 		if err != nil {
 			t.Error(s, err)
@@ -200,6 +221,36 @@ func TestCrontab(t *testing.T) {
 		daysOfMonth := makeRangeOfInt8(int8(2), int8(30), 5)
 		if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
 			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
+		}
+		months := makeRangeOfInt8(int8(1), int8(6), 2)
+		if !reflect.DeepEqual(cron.months, months) {
+			t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+		}
+	}
+
+	{
+		for i, m := range []string{"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"} {
+			s := fmt.Sprintf("* 1-12/2 1,2,3 %s *", m)
+			cron, err := NewCrontab(s)
+			if err != nil {
+				t.Error(s, err)
+			}
+			minutes := makeRangeOfInt8(int8(0), int8(59), 1)
+			if !reflect.DeepEqual(cron.minutes, minutes) {
+				t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.minutes)
+			}
+			hours := makeRangeOfInt8(int8(1), int8(12), 2)
+			if !reflect.DeepEqual(cron.hours, hours) {
+				t.Error(s, "小时解析错误: 期望", hours, "结果", cron.hours)
+			}
+			daysOfMonth := []int8{int8(1), int8(2), int8(3)}
+			if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
+				t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
+			}
+			months := []int8{int8(i + 1)}
+			if !reflect.DeepEqual(cron.months, months) {
+				t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+			}
 		}
 	}
 
