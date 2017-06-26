@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	cronMonthMap = map[string]int8{
+	cronMonthMap = map[string]int{
 		"jan": 1,
 		"feb": 2,
 		"mar": 3,
@@ -23,6 +23,15 @@ var (
 		"oct": 10,
 		"nov": 11,
 		"dec": 12,
+	}
+	cronWeekMap = map[string]int{
+		"sun": 0,
+		"mon": 1,
+		"tue": 2,
+		"wed": 3,
+		"thu": 4,
+		"fri": 5,
+		"sat": 6,
 	}
 )
 
@@ -234,6 +243,9 @@ func (p *cronParser) Parse(cron *Crontab) error {
 		return err
 	}
 	if err := p.parseMonths(cron); err != nil {
+		return err
+	}
+	if err := p.parseDaysOfWeek(cron); err != nil {
 		return err
 	}
 	return nil
@@ -556,6 +568,93 @@ func (p *cronParser) parseHours(cron *Crontab) error {
 	}
 }
 
+func (p *cronParser) parseDaysOfWeek(cron *Crontab) error {
+	head := p.L(0)
+	// *
+	if head.t == cronTokenTypes_Asterisk {
+		if p.L(1).t == cronTokenTypes_Slash { // */2 类似的模式
+			step, err := p.stepedAsterisk()
+			if err != nil {
+				return err
+			}
+			cron.daysOfWeek = makeRangeOfInt8(int8(0), int8(7), step)
+			return nil
+		} else { // *
+			if err := p.asterisk(); err != nil {
+				return err
+			}
+			cron.daysOfWeek = makeRangeOfInt8(int8(0), int8(7), 1)
+			return nil
+		}
+	} else if head.t == cronTokenTypes_Number {
+		if p.L(1).t == cronTokenTypes_Hyphen { // 0-59
+			if p.L(3).t == cronTokenTypes_Slash { // 0-59/3
+				v1, v2, v3, err := p.stepedRange()
+				if err != nil {
+					return err
+				}
+				if v1 < 0 || v1 > 7 {
+					return fmt.Errorf("语法错误: 周取值范围是0-7, 实际: %d", v1)
+				}
+				if v2 < 0 || v2 > 7 {
+					return fmt.Errorf("语法错误: 周取值范围是0-7, 实际: %d", v2)
+				}
+				if v1 > v2 {
+					return fmt.Errorf("语法错误: 周取值范围错误, 实际: %d-%d", v1, v2)
+				}
+				cron.daysOfWeek = makeRangeOfInt8(int8(v1), int8(v2), v3)
+			} else {
+				v1, v2, err := p.cronRange()
+				if err != nil {
+					return err
+				}
+				if v1 < 0 || v1 > 7 {
+					return fmt.Errorf("语法错误: 周取值范围是0-7, 实际: %d", v1)
+				}
+				if v2 < 0 || v2 > 7 {
+					return fmt.Errorf("语法错误: 周取值范围是0-7, 实际: %d", v2)
+				}
+				if v1 > v2 {
+					return fmt.Errorf("语法错误: 周取值范围错误, 实际: %d-%d", v1, v2)
+				}
+				cron.daysOfWeek = makeRangeOfInt8(int8(v1), int8(v2), 1)
+			}
+		} else if p.L(1).t == cronTokenTypes_Comma { // 0,13,20
+			var daysOfWeek []int8
+			if err := p.list(&daysOfWeek); err != nil {
+				return err
+			}
+			cron.daysOfWeek = daysOfWeek
+			return nil
+		} else { // 单纯的数字
+			v, err := p.number()
+			if err != nil {
+				return err
+			}
+			if v < 0 || v > 7 {
+				return fmt.Errorf("语法错误: 周取值范围是0-7, 实际: %d", v)
+			}
+			cron.daysOfWeek = []int8{int8(v)}
+		}
+		return nil
+	} else if head.t == cronTokenTypes_Word {
+		v, err := p.word()
+		if err != nil {
+			return err
+		}
+		n, ok := cronWeekMap[strings.ToLower(v)]
+		if !ok {
+			return fmt.Errorf("语法错误: 周名称错误，实际: %s", v)
+		}
+		cron.daysOfWeek = []int8{int8(n)}
+		return nil
+	} else {
+		return fmt.Errorf("语法错误: 应该是%s或者%s，实际: %s，值: %s",
+			cronTokenTypes_Asterisk.TokenName(), cronTokenTypes_Number.TokenName(),
+			head.t.TokenName(), string(head.v))
+	}
+}
+
 func (p *cronParser) parseMonths(cron *Crontab) error {
 	head := p.L(0)
 	// *
@@ -619,7 +718,7 @@ func (p *cronParser) parseMonths(cron *Crontab) error {
 			if err != nil {
 				return err
 			}
-			if v < 0 || v > 31 {
+			if v < 0 || v > 12 {
 				return fmt.Errorf("语法错误: 月取值范围是0-12, 实际: %d", v)
 			}
 			cron.months = []int8{int8(v)}
