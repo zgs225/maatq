@@ -290,6 +290,44 @@ func (p *cronParser) stepedRange() (*cronToken, *cronToken, *cronToken, error) {
 	return begin, end, step, nil
 }
 
+// 10-30
+// 返回 begin, end cron token
+func (p *cronParser) cronRange() (*cronToken, *cronToken, error) {
+	if err := p.Match(cronTokenTypes_Number); err != nil {
+		return nil, nil, err
+	}
+	begin, err := p.Consume()
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := p.Match(cronTokenTypes_Hyphen); err != nil {
+		return nil, nil, err
+	}
+	if _, err := p.Consume(); err != nil {
+		return nil, nil, err
+	}
+	if err := p.Match(cronTokenTypes_Number); err != nil {
+		return nil, nil, err
+	}
+	end, err := p.Consume()
+	if err != nil {
+		return nil, nil, err
+	}
+	return begin, end, nil
+}
+
+// 3
+func (p *cronParser) number() (int, error) {
+	if err := p.Match(cronTokenTypes_Number); err != nil {
+		return 0, err
+	}
+	token, err := p.Consume()
+	if err != nil {
+		return 0, err
+	}
+	return token.IntVal()
+}
+
 func (p *cronParser) parseMinutes(cron *Crontab) error {
 	head := p.L(0)
 	// 当分钟是 *
@@ -342,32 +380,18 @@ func (p *cronParser) parseMinutes(cron *Crontab) error {
 				}
 				cron.minutes = makeRangeOfInt8(int8(v1), int8(v2), v3)
 			} else {
-				if err := p.Match(cronTokenTypes_Number); err != nil {
-					return err
-				}
-				t1, err := p.Consume()
+				begin, end, err := p.cronRange()
 				if err != nil {
 					return err
 				}
-				v1, err := t1.IntVal()
+				v1, err := begin.IntVal()
 				if err != nil {
 					return err
 				}
 				if v1 < 0 || v1 > 59 {
 					return fmt.Errorf("语法错误: 分钟取值范围是0-59, 实际: %d", v1)
 				}
-				if err := p.Match(cronTokenTypes_Hyphen); err != nil {
-					return err
-				}
-				p.Consume()
-				if err := p.Match(cronTokenTypes_Number); err != nil {
-					return err
-				}
-				t2, err := p.Consume()
-				if err != nil {
-					return err
-				}
-				v2, err := t2.IntVal()
+				v2, err := end.IntVal()
 				if err != nil {
 					return err
 				}
@@ -382,12 +406,7 @@ func (p *cronParser) parseMinutes(cron *Crontab) error {
 		} else if p.L(1).t == cronTokenTypes_Comma { // 当分钟是 0,13,20
 			return p.list(cron)
 		} else { // 单纯的数字
-			p.Match(cronTokenTypes_Number)
-			token, err := p.Consume()
-			if err != nil {
-				return err
-			}
-			v, err := token.IntVal()
+			v, err := p.number()
 			if err != nil {
 				return err
 			}
