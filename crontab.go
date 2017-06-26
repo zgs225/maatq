@@ -205,6 +205,9 @@ func (p *cronParser) Parse(cron *Crontab) error {
 	if err := p.parseMinutes(cron); err != nil {
 		return err
 	}
+	if err := p.parseHours(cron); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -428,6 +431,82 @@ func (p *cronParser) parseMinutes(cron *Crontab) error {
 				return fmt.Errorf("语法错误: 分钟取值范围是0-59, 实际: %d", v)
 			}
 			cron.minutes = []int8{int8(v)}
+		}
+		return nil
+	} else {
+		return fmt.Errorf("语法错误: 应该是%s或者%s，实际: %s，值: %s",
+			cronTokenTypes_Asterisk.TokenName(), cronTokenTypes_Number.TokenName(),
+			head.t.TokenName(), string(head.v))
+	}
+}
+
+func (p *cronParser) parseHours(cron *Crontab) error {
+	head := p.L(0)
+	// *
+	if head.t == cronTokenTypes_Asterisk {
+		if p.L(1).t == cronTokenTypes_Slash { // */2 类似的模式
+			step, err := p.stepedAsterisk()
+			if err != nil {
+				return err
+			}
+			cron.hours = makeRangeOfInt8(int8(0), int8(23), step)
+			return nil
+		} else { // *
+			if err := p.asterisk(); err != nil {
+				return err
+			}
+			cron.hours = makeRangeOfInt8(int8(0), int8(23), 1)
+			return nil
+		}
+	} else if head.t == cronTokenTypes_Number {
+		if p.L(1).t == cronTokenTypes_Hyphen { // 0-59
+			if p.L(3).t == cronTokenTypes_Slash { // 0-59/3
+				v1, v2, v3, err := p.stepedRange()
+				if err != nil {
+					return err
+				}
+				if v1 < 0 || v1 > 23 {
+					return fmt.Errorf("语法错误: 小时取值范围是0-23, 实际: %d", v1)
+				}
+				if v2 < 0 || v2 > 23 {
+					return fmt.Errorf("语法错误: 小时取值范围是0-23, 实际: %d", v2)
+				}
+				if v1 > v2 {
+					return fmt.Errorf("语法错误: 小时取值范围错误, 实际: %d-%d", v1, v2)
+				}
+				cron.hours = makeRangeOfInt8(int8(v1), int8(v2), v3)
+			} else {
+				v1, v2, err := p.cronRange()
+				if err != nil {
+					return err
+				}
+				if v1 < 0 || v1 > 23 {
+					return fmt.Errorf("语法错误: 小时取值范围是0-23, 实际: %d", v1)
+				}
+				if v2 < 0 || v2 > 23 {
+					return fmt.Errorf("语法错误: 小时取值范围是0-23, 实际: %d", v2)
+				}
+				if v1 > v2 {
+					return fmt.Errorf("语法错误: 小时取值范围错误, 实际: %d-%d", v1, v2)
+				}
+				cron.hours = makeRangeOfInt8(int8(v1), int8(v2), 1)
+			}
+		} else if p.L(1).t == cronTokenTypes_Comma { // 0,13,20
+			var hours []int8
+			if err := p.list(&hours); err != nil {
+				return err
+			}
+			cron.hours = hours
+			return nil
+		} else { // 单纯的数字
+			v, err := p.number()
+			if err != nil {
+				return err
+			}
+			if v < 0 || v > 23 {
+				return fmt.Errorf("语法错误: 小时取值范围是0-59, 实际: %d", v)
+			}
+			cron.hours = []int8{int8(v)}
 		}
 		return nil
 	} else {
