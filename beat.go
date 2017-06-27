@@ -1,7 +1,9 @@
 package maatq
 
 import (
+	"bytes"
 	"container/heap"
+	"encoding/gob"
 	"encoding/json"
 	"time"
 
@@ -11,9 +13,18 @@ import (
 
 // The periodic task Scheduler
 
+func init() {
+	gob.Register(minHeap{})
+	gob.Register(PriorityMessage{})
+	gob.Register(Message{})
+	gob.Register(Crontab{})
+	gob.Register(Period{})
+}
+
 const (
 	DEFAULT_MAX_INTERVAL time.Duration = 5 * time.Minute
 	SYNC_INTERVAL                      = 5 * time.Minute
+	MAATQ_DUMPS_KEY                    = "maatq:heap:dumps"
 )
 
 type Scheduler struct {
@@ -127,6 +138,27 @@ func (s *Scheduler) sync() {
 // Mark scheduler as not running
 func (s *Scheduler) shutdown() {
 	s.isRunning = false
+}
+
+func (s *Scheduler) dumps() error {
+	buf := new(bytes.Buffer)
+	if err := gob.NewEncoder(buf).Encode(s.heap); err != nil {
+		return err
+	}
+	return s.r.Set(MAATQ_DUMPS_KEY, buf.Bytes(), 0).Err()
+}
+
+func (s *Scheduler) loads() (*minHeap, error) {
+	var heap minHeap
+	b, err := s.r.Get(MAATQ_DUMPS_KEY).Bytes()
+	if err != nil {
+		return nil, err
+	}
+	buf := bytes.NewBuffer(b)
+	if err := gob.NewDecoder(buf).Decode(&heap); err != nil {
+		return nil, err
+	}
+	return &heap, nil
 }
 
 func NewDefaultScheduler(addr, password string) *Scheduler {

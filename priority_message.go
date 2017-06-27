@@ -1,6 +1,7 @@
 package maatq
 
 import (
+	"encoding/json"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -25,4 +26,9 @@ func (pm *PriorityMessage) ToLogFields() log.Fields {
 	v := (&pm.Message).ToLogFields()
 	v["t"] = pm.T
 	return v
+}
+
+func (pm *PriorityMessage) String() string {
+	b, _ := json.Marshal(pm)
+	return string(b)
 }

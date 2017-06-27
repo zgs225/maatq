@@ -283,3 +283,7 @@ func (b *Broker) Crontab(m *Message, cron *Crontab) {
 		b.scheduler.Crontab(m, cron)
 	}
 }
+
+func (b *Broker) Dumps() error {
+	return b.scheduler.dumps()
+}

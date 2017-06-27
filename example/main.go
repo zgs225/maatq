@@ -71,5 +71,10 @@ func main() {
 	m.Data = "Hi cron....."
 	cron, _ = maatq.NewCrontab("* * * * *")
 	broker.Crontab(m, cron)
+
+	if err := broker.Dumps(); err != nil {
+		log.Error(err)
+	}
+
 	<-c
 }
