@@ -14,11 +14,11 @@ import (
 // The periodic task Scheduler
 
 func init() {
-	gob.Register(minHeap{})
-	gob.Register(PriorityMessage{})
-	gob.Register(Message{})
-	gob.Register(Crontab{})
-	gob.Register(Period{})
+	gob.Register(&minHeap{})
+	gob.Register(&PriorityMessage{})
+	gob.Register(&Message{})
+	gob.Register(&Crontab{})
+	gob.Register(&Period{})
 }
 
 const (

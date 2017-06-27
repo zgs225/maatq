@@ -2,10 +2,7 @@ package maatq
 
 import (
 	"errors"
-	"os"
-	"os/signal"
 	"runtime"
-	"syscall"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -80,40 +77,28 @@ func (g *WorkerGroup) initWorkers() {
 	}
 }
 
-func (g *WorkerGroup) handleSignals() {
-	sigC := make(chan os.Signal, 3)
-	signal.Notify(sigC, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+func (g *WorkerGroup) cleanup() {
+	var delay = false
 
-	go func() {
-		for sig := range sigC {
-			if sig == os.Interrupt || sig == syscall.SIGTERM || sig == syscall.SIGQUIT {
-				log.Warn("Prepare to safe exit...")
-				var delay = false
+	for _, worker := range g.Workers {
+		worker.mu.Lock()
+		defer worker.mu.Unlock()
 
-				for _, worker := range g.Workers {
-					worker.mu.Lock()
-					defer worker.mu.Unlock()
-
-					if worker.cm != nil {
-						delay = true
-					}
-				}
-
-				if delay {
-					log.Warn("Maatqd will exit after 5 seconds")
-					timer := time.NewTimer(time.Second * 5)
-					<-timer.C
-				}
-
-				for _, worker := range g.Workers {
-					worker.pushBackCurrentMsg()
-					worker.client.Close()
-				}
-
-				os.Exit(0)
-			}
+		if worker.cm != nil {
+			delay = true
 		}
-	}()
+	}
+
+	if delay {
+		log.Warn("Maatqd will exit after 5 seconds")
+		timer := time.NewTimer(time.Second * 5)
+		<-timer.C
+	}
+
+	for _, worker := range g.Workers {
+		worker.pushBackCurrentMsg()
+		worker.client.Close()
+	}
 }
 
 // 获取监听队列的 Group
@@ -137,7 +122,6 @@ func NewWorkerGroup(opt *GroupOptions) (*WorkerGroup, error) {
 	}
 
 	ptr.initWorkers()
-	ptr.handleSignals()
 
 	return ptr, nil
 }

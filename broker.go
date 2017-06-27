@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -50,7 +53,17 @@ func NewBroker(config *BrokerOptions) (*Broker, error) {
 	}
 	if config.Scheduler {
 		broker.scheduler = NewDefaultScheduler(config.Addr, config.Password)
+		h, err := broker.scheduler.loads()
+		log.Debug("Loading dumps: ", h)
+		if err == nil && h.Len() > 0 {
+			log.Debug("Dumps loaded")
+			broker.scheduler.heap = h
+		}
+		if err != nil {
+			log.Error("Dumps load error: ", err)
+		}
 	}
+	go broker.handleSignals()
 	return broker, nil
 }
 
@@ -286,4 +299,19 @@ func (b *Broker) Crontab(m *Message, cron *Crontab) {
 
 func (b *Broker) Dumps() error {
 	return b.scheduler.dumps()
+}
+
+func (b *Broker) handleSignals() {
+	ch := make(chan os.Signal)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
+	<-ch
+	log.Warn("Prepare to safe exit...")
+	if b.scheduler != nil {
+		log.Warn("Dumping heap...")
+		if err := b.scheduler.dumps(); err != nil {
+			log.Error("调度器保存错误: ", err)
+		}
+	}
+	b.group.cleanup()
+	os.Exit(0)
 }
