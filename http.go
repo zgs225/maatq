@@ -12,3 +12,9 @@ type delayRequest struct {
 	Data  interface{} `json:"data"`
 	Delay string      `json:"delay"`
 }
+
+type periodRequest struct {
+	Event  string      `json:"event"`
+	Data   interface{} `json:"data"`
+	Period int64       `json:"period"`
+}

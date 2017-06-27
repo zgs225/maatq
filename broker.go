@@ -155,6 +155,49 @@ func (b *Broker) newHttpServer() http.Handler {
 		json.NewEncoder(w).Encode(&resp)
 	})
 
+	mux.HandleFunc("/v1/messages/period", func(w http.ResponseWriter, r *http.Request) {
+		var (
+			m   Message
+			req periodRequest
+		)
+		err := json.NewDecoder(r.Body).Decode(&req)
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Server", "mataq/1.0")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			resp := response{
+				Ok:   false,
+				Err:  err.Error(),
+				Code: 100,
+			}
+			json.NewEncoder(w).Encode(&resp)
+			return
+		}
+
+		m.Id = uuid.New().String()
+		m.Event = req.Event
+		m.Data = req.Data
+		m.Timestamp = time.Now().Unix()
+		m.Try = 0
+		p, err := NewPeriod(req.Period)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			resp := response{
+				Ok:   false,
+				Err:  err.Error(),
+				Code: 104,
+			}
+			json.NewEncoder(w).Encode(&resp)
+			return
+		}
+		b.scheduler.Period(&m, p)
+		w.WriteHeader(http.StatusOK)
+		resp := response{
+			Ok:      true,
+			EventId: m.Id,
+		}
+		json.NewEncoder(w).Encode(&resp)
+	})
 	return mux
 }
 
