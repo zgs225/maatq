@@ -27,13 +27,6 @@ type BrokerOptions struct {
 	Scheduler bool
 }
 
-type response struct {
-	Ok      bool   `json:"ok"`
-	Code    int    `json:"code"`
-	EventId string `json:"event_id"`
-	Err     string `json:err"`
-}
-
 func NewBroker(config *BrokerOptions) (*Broker, error) {
 	group, err := NewWorkerGroup(&GroupOptions{
 		Parallel: config.Parallel,
@@ -116,6 +109,50 @@ func (b *Broker) newHttpServer() http.Handler {
 			}
 			json.NewEncoder(w).Encode(&resp)
 		}
+	})
+
+	mux.HandleFunc("/v1/messages/delay", func(w http.ResponseWriter, r *http.Request) {
+		var (
+			m   Message
+			req delayRequest
+		)
+		err := json.NewDecoder(r.Body).Decode(&req)
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Server", "mataq/1.0")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			resp := response{
+				Ok:   false,
+				Err:  err.Error(),
+				Code: 100,
+			}
+			json.NewEncoder(w).Encode(&resp)
+			return
+		}
+
+		m.Id = uuid.New().String()
+		m.Event = req.Event
+		m.Data = req.Data
+		m.Timestamp = time.Now().Unix()
+		m.Try = 0
+		d, err := time.ParseDuration(req.Delay)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			resp := response{
+				Ok:   false,
+				Err:  err.Error(),
+				Code: 103,
+			}
+			json.NewEncoder(w).Encode(&resp)
+			return
+		}
+		b.scheduler.Delay(&m, d)
+		w.WriteHeader(http.StatusOK)
+		resp := response{
+			Ok:      true,
+			EventId: m.Id,
+		}
+		json.NewEncoder(w).Encode(&resp)
 	})
 
 	return mux
