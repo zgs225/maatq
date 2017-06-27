@@ -378,3 +378,10 @@ func BenchmarkCrontab(b *testing.B) {
 		NewCrontab("* * * * *")
 	}
 }
+
+func BenchmarkCrontabNext(b *testing.B) {
+	cron, _ := NewCrontab("*/30 * 1 4-7 *")
+	for i := 0; i < b.N; i++ {
+		cron.Next()
+	}
+}
