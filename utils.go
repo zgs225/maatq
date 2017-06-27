@@ -5,8 +5,23 @@ import (
 	"errors"
 	"reflect"
 	"runtime"
+	"sort"
 	"strconv"
 )
+
+type Int8Slice []int8
+
+func (s Int8Slice) Len() int {
+	return len(s)
+}
+
+func (s Int8Slice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s Int8Slice) Less(i, j int) bool {
+	return s[i] < s[j]
+}
 
 func AtoString(val interface{}) (string, error) {
 	sval, ok := val.(string)
@@ -46,4 +61,9 @@ func makeRangeOfInt8(min, max int8, step int) []int8 {
 		s = append(s, i)
 	}
 	return s
+}
+
+func inInt8Slice(n int8, data []int8) bool {
+	i := sort.Search(len(data), func(i int) bool { return data[i] >= n })
+	return i < len(data) && data[i] == n
 }

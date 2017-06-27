@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -42,6 +44,51 @@ type Crontab struct {
 	months      []int8 // 0 - 12
 	daysOfWeek  []int8 // 0 - 7 (0或者7是周日, 或者使用名字)
 	text        string // Cron字符串
+}
+
+func (cron *Crontab) Next() time.Time {
+	return cron.nextFrom(time.Now())
+}
+
+func (cron *Crontab) nextFrom(from time.Time) time.Time {
+	var (
+		next time.Time
+		done bool
+	)
+	next = from.Add(time.Minute)
+	next = time.Date(next.Year(), next.Month(), next.Day(), next.Hour(), next.Minute(), 0, 0, next.Location())
+	for !done {
+		if !inInt8Slice(int8(next.Month()), cron.months) {
+			m := next.Month() + 1
+			y := next.Year()
+			if m > 12 {
+				m = 1
+				y = y + 1
+			}
+			next = time.Date(y, m, 1, 0, 0, 0, 0, next.Location())
+			continue
+		}
+
+		if !inInt8Slice(int8(next.Day()), cron.daysOfMonth) && !inInt8Slice(int8(next.Weekday()), cron.daysOfWeek) {
+			next = next.Add(time.Hour * 24)
+			next = time.Date(next.Year(), next.Month(), next.Day(), 0, 0, 0, 0, next.Location())
+			continue
+		}
+
+		if !inInt8Slice(int8(next.Hour()), cron.hours) {
+			next = next.Add(time.Hour)
+			next = time.Date(next.Year(), next.Month(), next.Day(), next.Hour(), 0, 0, 0, next.Location())
+			continue
+		}
+
+		if !inInt8Slice(int8(next.Minute()), cron.minutes) {
+			next = next.Add(time.Minute)
+			next = time.Date(next.Year(), next.Month(), next.Day(), next.Hour(), next.Minute(), 0, 0, next.Location())
+			continue
+		}
+		done = true
+	}
+	return next
 }
 
 type cronTokenType int32
@@ -248,6 +295,11 @@ func (p *cronParser) Parse(cron *Crontab) error {
 	if err := p.parseDaysOfWeek(cron); err != nil {
 		return err
 	}
+	sort.Sort(Int8Slice(cron.minutes))
+	sort.Sort(Int8Slice(cron.hours))
+	sort.Sort(Int8Slice(cron.daysOfMonth))
+	sort.Sort(Int8Slice(cron.months))
+	sort.Sort(Int8Slice(cron.daysOfWeek))
 	return nil
 }
 
@@ -583,7 +635,7 @@ func (p *cronParser) parseDaysOfWeek(cron *Crontab) error {
 			if err := p.asterisk(); err != nil {
 				return err
 			}
-			cron.daysOfWeek = makeRangeOfInt8(int8(0), int8(7), 1)
+			cron.daysOfWeek = []int8{}
 			return nil
 		}
 	} else if head.t == cronTokenTypes_Number {

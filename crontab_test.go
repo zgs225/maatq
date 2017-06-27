@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 )
 
 func TestCronLexer(t *testing.T) {
@@ -106,7 +107,7 @@ func TestCrontab(t *testing.T) {
 		if !reflect.DeepEqual(cron.months, months) {
 			t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
 		}
-		daysOfWeek := makeRangeOfInt8(int8(0), int8(7), 1)
+		daysOfWeek := []int8{}
 		if !reflect.DeepEqual(cron.daysOfWeek, daysOfWeek) {
 			t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.daysOfWeek)
 		}
@@ -289,6 +290,85 @@ func TestCrontab(t *testing.T) {
 		_, err := NewCrontab(s)
 		if err == nil {
 			t.Error(s, "期望解析失败，结果解析成功")
+		}
+	}
+}
+
+func TestCrontabNext(t *testing.T) {
+	{
+		var (
+			now, next time.Time
+		)
+		cron, _ := NewCrontab("* * * * *")
+		now = time.Date(2017, 6, 1, 0, 0, 0, 0, time.Local)
+		for i := 0; i < 100; i++ {
+			next = cron.nextFrom(now)
+			if next.Sub(now) != time.Minute {
+				t.Error("下一次周期计算错误:", now, next)
+				break
+			} else {
+				now = next
+			}
+		}
+	}
+
+	{
+		var (
+			now, next time.Time
+		)
+		cron, _ := NewCrontab("*/2 * * * *")
+		now = time.Date(2017, 6, 1, 0, 0, 0, 0, time.Local)
+		for i := 0; i < 100; i++ {
+			next = cron.nextFrom(now)
+			if next.Sub(now) != 2*time.Minute {
+				t.Error("下一次周期计算错误:", now, next)
+				break
+			} else {
+				now = next
+			}
+		}
+	}
+
+	{
+		var (
+			now, next time.Time
+		)
+		cron, _ := NewCrontab("0 0 3 * *")
+		now = time.Date(2017, 6, 1, 0, 0, 0, 0, time.Local)
+		for i := 0; i < 100; i++ {
+			next = cron.nextFrom(now)
+			if next.Day() != 3 || next.Minute() != 0 || next.Hour() != 0 {
+				t.Error("[*/2 * 3 * *] 下一次周期计算错误:", now, next)
+				break
+			} else {
+				now = next
+			}
+		}
+	}
+
+	{
+		var (
+			now, next time.Time
+		)
+		cron, _ := NewCrontab("0 0 0 * 1-5")
+		now = time.Date(2017, 6, 1, 0, 0, 0, 0, time.Local)
+		for i := 0; i < 100; i++ {
+			next = cron.nextFrom(now)
+			// t.Log(next, next.Weekday())
+			now = next
+		}
+	}
+
+	{
+		var (
+			now, next time.Time
+		)
+		cron, _ := NewCrontab("*/30 * 1 4-7 *")
+		now = time.Date(2017, 6, 1, 0, 0, 0, 0, time.Local)
+		for i := 0; i < 100; i++ {
+			next = cron.nextFrom(now)
+			t.Log(next, next.Weekday())
+			now = next
 		}
 	}
 }
