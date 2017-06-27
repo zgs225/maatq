@@ -11,10 +11,55 @@ MaatQ
 * [x] 实现优先队列
 * [x] 实现周期行任务
 * [x] 实现Crontab
-* [ ] HTTP API
+* [x] HTTP API
 * [ ] 持久化
 * [ ] `Go`，`PHP`和`Python`的客户端
 * [ ] 实现队列任务监控
+
+### HTTP API
+
+* 发布一条消息
+
+```
+POST /v1/messages/dispath
+{
+    "event": "hello",
+    "data": "world"
+}
+```
+
+* 发布一条延迟的消息
+
+```
+POST /v1/messages/delay
+{
+    "event": "hello",
+    "data": "world",
+    "delay": "3m"
+}
+```
+
+* 发布一条周期性的消息
+
+```
+POST /v1/messages/period
+{
+    "event": "hello",
+    "data": "world",
+    "period": 100
+}
+```
+
+* 发布一条Crontab消息
+
+```
+POST /v1/messages/crontab
+{
+    "event": "hello",
+    "data": "world",
+    "crontab": "* */2 * * *"
+}
+```
 
 ### 实现
 
