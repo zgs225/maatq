@@ -9,14 +9,14 @@ import (
 	"github.com/go-redis/redis"
 )
 
-// The periodic task scheduler
+// The periodic task Scheduler
 
 const (
 	DEFAULT_MAX_INTERVAL time.Duration = 5 * time.Minute
 	SYNC_INTERVAL                      = 5 * time.Minute
 )
 
-type scheduler struct {
+type Scheduler struct {
 	interval     time.Duration
 	heap         *minHeap
 	logger       *log.Entry
@@ -26,11 +26,11 @@ type scheduler struct {
 	csleep       *cancelSleep
 }
 
-func (s *scheduler) SetInterval(v time.Duration) {
+func (s *Scheduler) SetInterval(v time.Duration) {
 	s.interval = v
 }
 
-func (s *scheduler) ServeLoop() {
+func (s *Scheduler) ServeLoop() {
 	s.logger.Info("Starting...")
 	s.logger.Debugf("Ticking with max interval %s", s.interval.String())
 
@@ -55,7 +55,7 @@ func (s *scheduler) ServeLoop() {
 }
 
 // Delay a message in give duration
-func (s *scheduler) Delay(m *Message, d time.Duration) {
+func (s *Scheduler) Delay(m *Message, d time.Duration) {
 	t := time.Now().Add(d)
 	pm := &PriorityMessage{*m, t.Unix(), nil}
 	heap.Push(s.heap, pm)
@@ -63,7 +63,7 @@ func (s *scheduler) Delay(m *Message, d time.Duration) {
 }
 
 // 添加周期执行的任务
-func (s *scheduler) Period(m *Message, p *Period) {
+func (s *Scheduler) Period(m *Message, p *Period) {
 	s.logger.WithFields(m.ToLogFields()).WithField("period", time.Second*time.Duration(p.Cycle)).Info("Periodic message recieved")
 	t := p.Next()
 	pm := &PriorityMessage{*m, t.Unix(), p}
@@ -72,7 +72,7 @@ func (s *scheduler) Period(m *Message, p *Period) {
 }
 
 // 添加Crontab任务
-func (s *scheduler) Crontab(m *Message, cron *Crontab) {
+func (s *Scheduler) Crontab(m *Message, cron *Crontab) {
 	s.logger.WithFields(m.ToLogFields()).WithField("crontab", cron.text).Info("Crontab message recieved")
 	t := cron.Next()
 	pm := &PriorityMessage{*m, t.Unix(), cron}
@@ -82,7 +82,7 @@ func (s *scheduler) Crontab(m *Message, cron *Crontab) {
 
 // Run a tick, one iteration of the scheduler, executes one due task per call.
 // Returns preferred delay duration for next call
-func (s *scheduler) tick() (time.Duration, error) {
+func (s *Scheduler) tick() (time.Duration, error) {
 	if s.heap.Len() <= 0 {
 		return s.interval, nil
 	}
@@ -113,7 +113,7 @@ func (s *scheduler) tick() (time.Duration, error) {
 	}
 }
 
-func (s *scheduler) shouldSync() bool {
+func (s *Scheduler) shouldSync() bool {
 	if s.lastSyncTime.IsZero() {
 		return true
 	}
@@ -121,20 +121,20 @@ func (s *scheduler) shouldSync() bool {
 }
 
 // Sync task from redis
-func (s *scheduler) sync() {
+func (s *Scheduler) sync() {
 }
 
 // Mark scheduler as not running
-func (s *scheduler) shutdown() {
+func (s *Scheduler) shutdown() {
 	s.isRunning = false
 }
 
-func NewDefaultScheduler(addr, password string) *scheduler {
+func NewDefaultScheduler(addr, password string) *Scheduler {
 	h := newHeap()
 	l := log.WithFields(log.Fields{
 		"workerId": "scheduler",
 	})
-	return &scheduler{
+	return &Scheduler{
 		interval:  DEFAULT_MAX_INTERVAL,
 		heap:      h,
 		logger:    l,

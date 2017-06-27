@@ -40,17 +40,16 @@ func main() {
 	flag.Parse()
 	setLogger()
 
-	group, err := maatq.NewWorkerGroup(&maatq.GroupOptions{*parallel, *addr, *password, *try, []string{"default", "sms"}})
+	config := &maatq.BrokerOptions{*parallel, *addr, *password, *try, []string{"default", "sms"}, true}
+	broker, err := maatq.NewBroker(config)
 	if err != nil {
 		log.Panic(err)
 	}
 
 	c := make(chan int)
 
-	group.AddEventHandler("hello", maatq.EventHandler(SayHello))
-	go group.ServeLoop()
-
-	s := maatq.NewDefaultScheduler(*addr, *password)
+	broker.AddEventHandler("hello", maatq.EventHandler(SayHello))
+	go broker.ServeLoop()
 
 	u := uuid.New()
 	m := &maatq.Message{
@@ -62,17 +61,15 @@ func main() {
 	}
 	p, _ := maatq.NewPeriod(300)
 
-	go s.ServeLoop()
-
-	s.Period(m, p)
+	broker.Period(m, p)
 	time.Sleep(time.Second)
 	m.Data = "Hello cron....."
 	cron, _ := maatq.NewCrontab("*/2 * * * *")
-	s.Crontab(m, cron)
+	broker.Crontab(m, cron)
 
 	time.Sleep(time.Second)
 	m.Data = "Hi cron....."
 	cron, _ = maatq.NewCrontab("* * * * *")
-	s.Crontab(m, cron)
+	broker.Crontab(m, cron)
 	<-c
 }
