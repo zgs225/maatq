@@ -64,7 +64,7 @@ func (s *scheduler) Delay(m *Message, d time.Duration) {
 
 // 添加周期执行的任务
 func (s *scheduler) Period(m *Message, p *Period) {
-	s.logger.WithFields(m.ToLogFields()).WithField("period", time.Second*time.Duration(p.Cycle)).Debug("Periodic message recieved")
+	s.logger.WithFields(m.ToLogFields()).WithField("period", time.Second*time.Duration(p.Cycle)).Info("Periodic message recieved")
 	t := p.Next()
 	pm := &PriorityMessage{*m, t.Unix(), p}
 	heap.Push(s.heap, pm)
@@ -73,7 +73,7 @@ func (s *scheduler) Period(m *Message, p *Period) {
 
 // 添加Crontab任务
 func (s *scheduler) Crontab(m *Message, cron *Crontab) {
-	s.logger.WithFields(m.ToLogFields()).WithField("crontab", cron.text).Debug("Crontab message recieved")
+	s.logger.WithFields(m.ToLogFields()).WithField("crontab", cron.text).Info("Crontab message recieved")
 	t := cron.Next()
 	pm := &PriorityMessage{*m, t.Unix(), cron}
 	heap.Push(s.heap, pm)
