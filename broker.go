@@ -92,6 +92,24 @@ func (b *Broker) newHttpServer() http.Handler {
 	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
 	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		key := "/v1/messages/cancel/"
+		w.Header().Set("Server", "mataq/1.0")
+		if r.URL.Path[:len(key)] == key {
+			w.Header().Set("Content-Type", "application/json")
+			id := r.URL.Path[len(key):]
+			ok := b.scheduler.Cancel(id)
+			resp := response{
+				Ok:      ok,
+				EventId: id,
+			}
+			json.NewEncoder(w).Encode(&resp)
+		} else {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("Not Found"))
+		}
+	})
+
 	mux.HandleFunc("/v1/messages/dispatch", func(w http.ResponseWriter, r *http.Request) {
 		var m Message
 		err := json.NewDecoder(r.Body).Decode(&m)

@@ -23,7 +23,6 @@ func init() {
 
 const (
 	DEFAULT_MAX_INTERVAL time.Duration = 5 * time.Minute
-	SYNC_INTERVAL                      = 5 * time.Minute
 	MAATQ_DUMPS_KEY                    = "maatq:heap:dumps"
 )
 
@@ -50,17 +49,12 @@ func (s *Scheduler) ServeLoop() {
 
 		if err != nil {
 			s.logger.Errorf("Error in a tick: %v", err)
-			s.shutdown()
-			s.sync()
+			s.dumps()
 		}
 
 		if int64(d) > 0 {
 			s.logger.Debugf("Waking up in %s", d.String())
 			s.csleep.Sleep(d)
-		}
-
-		if s.shouldSync() {
-			s.sync()
 		}
 	}
 }
@@ -89,6 +83,22 @@ func (s *Scheduler) Crontab(m *Message, cron *Crontab) {
 	pm := &PriorityMessage{*m, t.Unix(), cron}
 	heap.Push(s.heap, pm)
 	s.csleep.Cancel()
+}
+
+// 取消一个任务
+func (s *Scheduler) Cancel(id string) bool {
+	s.csleep.Cancel()
+	items := *s.heap.Items
+	for i := 0; i < s.heap.Len(); i++ {
+		item := items[i]
+		if item.Id == id {
+			m1 := heap.Remove(s.heap, i)
+			m2 := m1.(*PriorityMessage)
+			log.WithFields(m2.ToLogFields()).Warn("Canceld")
+			return true
+		}
+	}
+	return false
 }
 
 // Run a tick, one iteration of the scheduler, executes one due task per call.
@@ -122,17 +132,6 @@ func (s *Scheduler) tick() (time.Duration, error) {
 		heap.Push(s.heap, m)
 		return d, nil
 	}
-}
-
-func (s *Scheduler) shouldSync() bool {
-	if s.lastSyncTime.IsZero() {
-		return true
-	}
-	return time.Now().Sub(s.lastSyncTime) >= SYNC_INTERVAL
-}
-
-// Sync task from redis
-func (s *Scheduler) sync() {
 }
 
 // Mark scheduler as not running
