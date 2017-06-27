@@ -73,7 +73,7 @@ func (s *Scheduler) Period(m *Message, p *Period) {
 
 // 添加Crontab任务
 func (s *Scheduler) Crontab(m *Message, cron *Crontab) {
-	s.logger.WithFields(m.ToLogFields()).WithField("crontab", cron.text).Info("Crontab message recieved")
+	s.logger.WithFields(m.ToLogFields()).WithField("crontab", cron.Text).Info("Crontab message recieved")
 	t := cron.Next()
 	pm := &PriorityMessage{*m, t.Unix(), cron}
 	heap.Push(s.heap, pm)

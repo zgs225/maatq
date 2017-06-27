@@ -92,24 +92,24 @@ func TestCrontab(t *testing.T) {
 			t.Error(s, err)
 		}
 		minutes := makeRangeOfInt8(int8(0), int8(59), 1)
-		if !reflect.DeepEqual(cron.minutes, minutes) {
-			t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.minutes)
+		if !reflect.DeepEqual(cron.Minutes, minutes) {
+			t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.Minutes)
 		}
 		hours := makeRangeOfInt8(int8(0), int8(23), 1)
-		if !reflect.DeepEqual(cron.hours, hours) {
-			t.Error(s, "小时解析错误: 期望", hours, "结果", cron.hours)
+		if !reflect.DeepEqual(cron.Hours, hours) {
+			t.Error(s, "小时解析错误: 期望", hours, "结果", cron.Hours)
 		}
 		daysOfMonth := makeRangeOfInt8(int8(0), int8(31), 1)
-		if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
-			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
+		if !reflect.DeepEqual(cron.DaysOfMonth, daysOfMonth) {
+			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.DaysOfMonth)
 		}
 		months := makeRangeOfInt8(int8(0), int8(12), 1)
-		if !reflect.DeepEqual(cron.months, months) {
-			t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+		if !reflect.DeepEqual(cron.Months, months) {
+			t.Error(s, "月解析错误: 期望", months, "结果", cron.Months)
 		}
 		daysOfWeek := []int8{}
-		if !reflect.DeepEqual(cron.daysOfWeek, daysOfWeek) {
-			t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.daysOfWeek)
+		if !reflect.DeepEqual(cron.DaysOfWeek, daysOfWeek) {
+			t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.DaysOfWeek)
 		}
 	}
 
@@ -120,24 +120,24 @@ func TestCrontab(t *testing.T) {
 			t.Error(s, err)
 		}
 		minutes := makeRangeOfInt8(int8(0), int8(59), 3)
-		if !reflect.DeepEqual(cron.minutes, minutes) {
-			t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.minutes)
+		if !reflect.DeepEqual(cron.Minutes, minutes) {
+			t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.Minutes)
 		}
 		hours := makeRangeOfInt8(int8(0), int8(23), 2)
-		if !reflect.DeepEqual(cron.hours, hours) {
-			t.Error(s, "小时解析错误: 期望", hours, "结果", cron.hours)
+		if !reflect.DeepEqual(cron.Hours, hours) {
+			t.Error(s, "小时解析错误: 期望", hours, "结果", cron.Hours)
 		}
 		daysOfMonth := makeRangeOfInt8(int8(0), int8(31), 4)
-		if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
-			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
+		if !reflect.DeepEqual(cron.DaysOfMonth, daysOfMonth) {
+			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.DaysOfMonth)
 		}
 		months := makeRangeOfInt8(int8(0), int8(12), 3)
-		if !reflect.DeepEqual(cron.months, months) {
-			t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+		if !reflect.DeepEqual(cron.Months, months) {
+			t.Error(s, "月解析错误: 期望", months, "结果", cron.Months)
 		}
 		daysOfWeek := makeRangeOfInt8(int8(0), int8(7), 5)
-		if !reflect.DeepEqual(cron.daysOfWeek, daysOfWeek) {
-			t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.daysOfWeek)
+		if !reflect.DeepEqual(cron.DaysOfWeek, daysOfWeek) {
+			t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.DaysOfWeek)
 		}
 	}
 
@@ -148,24 +148,24 @@ func TestCrontab(t *testing.T) {
 			t.Error(s, err)
 		}
 		minutes := []int8{int8(13)}
-		if !reflect.DeepEqual(cron.minutes, minutes) {
-			t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.minutes)
+		if !reflect.DeepEqual(cron.Minutes, minutes) {
+			t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.Minutes)
 		}
 		hours := []int8{int8(21)}
-		if !reflect.DeepEqual(cron.hours, hours) {
-			t.Error(s, "小时解析错误: 期望", hours, "结果", cron.hours)
+		if !reflect.DeepEqual(cron.Hours, hours) {
+			t.Error(s, "小时解析错误: 期望", hours, "结果", cron.Hours)
 		}
 		daysOfMonth := []int8{int8(18)}
-		if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
-			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
+		if !reflect.DeepEqual(cron.DaysOfMonth, daysOfMonth) {
+			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.DaysOfMonth)
 		}
 		months := []int8{int8(10)}
-		if !reflect.DeepEqual(cron.months, months) {
-			t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+		if !reflect.DeepEqual(cron.Months, months) {
+			t.Error(s, "月解析错误: 期望", months, "结果", cron.Months)
 		}
 		daysOfWeek := []int8{int8(6)}
-		if !reflect.DeepEqual(cron.daysOfWeek, daysOfWeek) {
-			t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.daysOfWeek)
+		if !reflect.DeepEqual(cron.DaysOfWeek, daysOfWeek) {
+			t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.DaysOfWeek)
 		}
 	}
 
@@ -176,24 +176,24 @@ func TestCrontab(t *testing.T) {
 			t.Error(s, err)
 		}
 		minutes := []int8{int8(0), int8(5), int8(15), int8(20)}
-		if !reflect.DeepEqual(cron.minutes, minutes) {
-			t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.minutes)
+		if !reflect.DeepEqual(cron.Minutes, minutes) {
+			t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.Minutes)
 		}
 		hours := []int8{int8(0), int8(12), int8(23)}
-		if !reflect.DeepEqual(cron.hours, hours) {
-			t.Error(s, "小时解析错误: 期望", hours, "结果", cron.hours)
+		if !reflect.DeepEqual(cron.Hours, hours) {
+			t.Error(s, "小时解析错误: 期望", hours, "结果", cron.Hours)
 		}
 		daysOfMonth := []int8{int8(1), int8(3), int8(5)}
-		if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
-			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
+		if !reflect.DeepEqual(cron.DaysOfMonth, daysOfMonth) {
+			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.DaysOfMonth)
 		}
 		months := []int8{int8(1), int8(4), int8(7), int8(10)}
-		if !reflect.DeepEqual(cron.months, months) {
-			t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+		if !reflect.DeepEqual(cron.Months, months) {
+			t.Error(s, "月解析错误: 期望", months, "结果", cron.Months)
 		}
 		daysOfWeek := []int8{int8(1), int8(2), int8(3), int8(4), int8(5)}
-		if !reflect.DeepEqual(cron.daysOfWeek, daysOfWeek) {
-			t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.daysOfWeek)
+		if !reflect.DeepEqual(cron.DaysOfWeek, daysOfWeek) {
+			t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.DaysOfWeek)
 		}
 	}
 
@@ -204,24 +204,24 @@ func TestCrontab(t *testing.T) {
 			t.Error(s, err)
 		}
 		minutes := makeRangeOfInt8(int8(0), int8(20), 1)
-		if !reflect.DeepEqual(cron.minutes, minutes) {
-			t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.minutes)
+		if !reflect.DeepEqual(cron.Minutes, minutes) {
+			t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.Minutes)
 		}
 		hours := makeRangeOfInt8(int8(9), int8(17), 1)
-		if !reflect.DeepEqual(cron.hours, hours) {
-			t.Error(s, "小时解析错误: 期望", hours, "结果", cron.hours)
+		if !reflect.DeepEqual(cron.Hours, hours) {
+			t.Error(s, "小时解析错误: 期望", hours, "结果", cron.Hours)
 		}
 		daysOfMonth := makeRangeOfInt8(int8(1), int8(13), 1)
-		if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
-			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
+		if !reflect.DeepEqual(cron.DaysOfMonth, daysOfMonth) {
+			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.DaysOfMonth)
 		}
 		months := makeRangeOfInt8(int8(1), int8(6), 1)
-		if !reflect.DeepEqual(cron.months, months) {
-			t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+		if !reflect.DeepEqual(cron.Months, months) {
+			t.Error(s, "月解析错误: 期望", months, "结果", cron.Months)
 		}
 		daysOfWeek := makeRangeOfInt8(int8(1), int8(5), 1)
-		if !reflect.DeepEqual(cron.daysOfWeek, daysOfWeek) {
-			t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.daysOfWeek)
+		if !reflect.DeepEqual(cron.DaysOfWeek, daysOfWeek) {
+			t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.DaysOfWeek)
 		}
 	}
 
@@ -232,24 +232,24 @@ func TestCrontab(t *testing.T) {
 			t.Error(s, err)
 		}
 		minutes := makeRangeOfInt8(int8(0), int8(20), 3)
-		if !reflect.DeepEqual(cron.minutes, minutes) {
-			t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.minutes)
+		if !reflect.DeepEqual(cron.Minutes, minutes) {
+			t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.Minutes)
 		}
 		hours := makeRangeOfInt8(int8(1), int8(12), 2)
-		if !reflect.DeepEqual(cron.hours, hours) {
-			t.Error(s, "小时解析错误: 期望", hours, "结果", cron.hours)
+		if !reflect.DeepEqual(cron.Hours, hours) {
+			t.Error(s, "小时解析错误: 期望", hours, "结果", cron.Hours)
 		}
 		daysOfMonth := makeRangeOfInt8(int8(2), int8(30), 5)
-		if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
-			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
+		if !reflect.DeepEqual(cron.DaysOfMonth, daysOfMonth) {
+			t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.DaysOfMonth)
 		}
 		months := makeRangeOfInt8(int8(1), int8(6), 2)
-		if !reflect.DeepEqual(cron.months, months) {
-			t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+		if !reflect.DeepEqual(cron.Months, months) {
+			t.Error(s, "月解析错误: 期望", months, "结果", cron.Months)
 		}
 		daysOfWeek := makeRangeOfInt8(int8(1), int8(5), 2)
-		if !reflect.DeepEqual(cron.daysOfWeek, daysOfWeek) {
-			t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.daysOfWeek)
+		if !reflect.DeepEqual(cron.DaysOfWeek, daysOfWeek) {
+			t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.DaysOfWeek)
 		}
 	}
 
@@ -262,24 +262,24 @@ func TestCrontab(t *testing.T) {
 					t.Error(s, err)
 				}
 				minutes := makeRangeOfInt8(int8(0), int8(59), 1)
-				if !reflect.DeepEqual(cron.minutes, minutes) {
-					t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.minutes)
+				if !reflect.DeepEqual(cron.Minutes, minutes) {
+					t.Error(s, "分钟解析错误: 期望", minutes, "结果", cron.Minutes)
 				}
 				hours := makeRangeOfInt8(int8(1), int8(12), 2)
-				if !reflect.DeepEqual(cron.hours, hours) {
-					t.Error(s, "小时解析错误: 期望", hours, "结果", cron.hours)
+				if !reflect.DeepEqual(cron.Hours, hours) {
+					t.Error(s, "小时解析错误: 期望", hours, "结果", cron.Hours)
 				}
 				daysOfMonth := []int8{int8(1), int8(2), int8(3)}
-				if !reflect.DeepEqual(cron.daysOfMonth, daysOfMonth) {
-					t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.daysOfMonth)
+				if !reflect.DeepEqual(cron.DaysOfMonth, daysOfMonth) {
+					t.Error(s, "天解析错误: 期望", daysOfMonth, "结果", cron.DaysOfMonth)
 				}
 				months := []int8{int8(i + 1)}
-				if !reflect.DeepEqual(cron.months, months) {
-					t.Error(s, "月解析错误: 期望", months, "结果", cron.months)
+				if !reflect.DeepEqual(cron.Months, months) {
+					t.Error(s, "月解析错误: 期望", months, "结果", cron.Months)
 				}
 				daysOfWeek := []int8{int8(j)}
-				if !reflect.DeepEqual(cron.daysOfWeek, daysOfWeek) {
-					t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.daysOfWeek)
+				if !reflect.DeepEqual(cron.DaysOfWeek, daysOfWeek) {
+					t.Error(s, "周解析错误: 期望", daysOfWeek, "结果", cron.DaysOfWeek)
 				}
 			}
 		}
