@@ -1,7 +1,13 @@
 package maatq
 
 import (
+	"encoding/json"
+	"net/http"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
+	"github.com/go-redis/redis"
+	"github.com/google/uuid"
 )
 
 // 用于代理启动Workers和Scheduler，并且提供对外HTTP API
@@ -9,6 +15,7 @@ type Broker struct {
 	scheduler *Scheduler
 	group     *WorkerGroup
 	config    *BrokerOptions
+	redis     *redis.Client
 }
 
 type BrokerOptions struct {
@@ -18,6 +25,13 @@ type BrokerOptions struct {
 	Try       int
 	Queues    []string
 	Scheduler bool
+}
+
+type response struct {
+	Ok      bool   `json:"ok"`
+	Code    int    `json:"code"`
+	EventId string `json:"event_id"`
+	Err     string `json:err"`
 }
 
 func NewBroker(config *BrokerOptions) (*Broker, error) {
@@ -34,6 +48,11 @@ func NewBroker(config *BrokerOptions) (*Broker, error) {
 	broker := &Broker{
 		group:  group,
 		config: config,
+		redis: redis.NewClient(&redis.Options{
+			Addr:     config.Addr,
+			Password: config.Password,
+			DB:       0,
+		}),
 	}
 	if config.Scheduler {
 		broker.scheduler = NewDefaultScheduler(config.Addr, config.Password)
@@ -41,13 +60,74 @@ func NewBroker(config *BrokerOptions) (*Broker, error) {
 	return broker, nil
 }
 
-func (b *Broker) ServeLoop() {
-	ch := make(chan bool)
+func (b *Broker) ServeLoop(addr string) {
+	ch := make(chan error)
 	go b.group.ServeLoop()
 	if b.config.Scheduler {
 		go b.scheduler.ServeLoop()
 	}
-	<-ch
+	go b.ServeHttp(addr, ch)
+	log.Error(<-ch)
+}
+
+func (b *Broker) ServeHttp(addr string, ch chan error) {
+	log.Info("Http serve: ", addr)
+	handler := b.newHttpServer()
+	ch <- http.ListenAndServe(addr, handler)
+}
+
+func (b *Broker) newHttpServer() http.Handler {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/v1/messages/dispatch", func(w http.ResponseWriter, r *http.Request) {
+		var m Message
+		err := json.NewDecoder(r.Body).Decode(&m)
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Server", "mataq/1.0")
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			resp := response{
+				Ok:   false,
+				Err:  err.Error(),
+				Code: 100,
+			}
+			json.NewEncoder(w).Encode(&resp)
+			return
+		}
+
+		id := uuid.New()
+		m.Id = id.String()
+		m.Timestamp = time.Now().Unix()
+		m.Try = 0
+
+		if err := b.Enqueue(DefaultQueue, &m); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			resp := response{
+				Ok:   false,
+				Err:  err.Error(),
+				Code: 101,
+			}
+			json.NewEncoder(w).Encode(&resp)
+		} else {
+			w.WriteHeader(http.StatusOK)
+			resp := response{
+				Ok:      true,
+				EventId: m.Id,
+			}
+			json.NewEncoder(w).Encode(&resp)
+		}
+	})
+
+	return mux
+}
+
+func (b *Broker) Enqueue(queue string, m *Message) error {
+	data, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	cmd := b.redis.RPush(queue, data)
+	return cmd.Err()
 }
 
 func (b *Broker) AddEventHandler(event string, handler EventHandler) {

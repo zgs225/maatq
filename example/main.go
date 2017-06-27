@@ -49,7 +49,7 @@ func main() {
 	c := make(chan int)
 
 	broker.AddEventHandler("hello", maatq.EventHandler(SayHello))
-	go broker.ServeLoop()
+	go broker.ServeLoop(":8181")
 
 	u := uuid.New()
 	m := &maatq.Message{
