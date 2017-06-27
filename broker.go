@@ -3,6 +3,7 @@ package maatq
 import (
 	"encoding/json"
 	"net/http"
+	"net/http/pprof"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -71,6 +72,12 @@ func (b *Broker) ServeHttp(addr string, ch chan error) {
 
 func (b *Broker) newHttpServer() http.Handler {
 	mux := http.NewServeMux()
+
+	mux.Handle("/debug/pprof/", http.HandlerFunc(pprof.Index))
+	mux.Handle("/debug/pprof/cmdline", http.HandlerFunc(pprof.Cmdline))
+	mux.Handle("/debug/pprof/profile", http.HandlerFunc(pprof.Profile))
+	mux.Handle("/debug/pprof/symbol", http.HandlerFunc(pprof.Symbol))
+	mux.Handle("/debug/pprof/trace", http.HandlerFunc(pprof.Trace))
 
 	mux.HandleFunc("/v1/messages/dispatch", func(w http.ResponseWriter, r *http.Request) {
 		var m Message
