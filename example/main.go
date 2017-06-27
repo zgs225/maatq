@@ -60,13 +60,19 @@ func main() {
 		Try:       0,
 		Data:      "Hello period",
 	}
-	p, _ := maatq.NewPeriod(3)
+	p, _ := maatq.NewPeriod(300)
 
 	go s.ServeLoop()
 
 	s.Period(m, p)
-	m.Data = "Hello delay....."
-	time.Sleep(10 * time.Second)
-	s.Delay(m, time.Second*4)
+	time.Sleep(time.Second)
+	m.Data = "Hello cron....."
+	cron, _ := maatq.NewCrontab("*/2 * * * *")
+	s.Crontab(m, cron)
+
+	time.Sleep(time.Second)
+	m.Data = "Hi cron....."
+	cron, _ = maatq.NewCrontab("* * * * *")
+	s.Crontab(m, cron)
 	<-c
 }
