@@ -12,6 +12,7 @@ MaatQ
 * [x] 实现周期行任务
 * [x] 实现Crontab
 * [ ] HTTP API
+* [ ] 持久化
 * [ ] `Go`，`PHP`和`Python`的客户端
 * [ ] 实现队列任务监控
 
