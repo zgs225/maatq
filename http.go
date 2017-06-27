@@ -18,3 +18,9 @@ type periodRequest struct {
 	Data   interface{} `json:"data"`
 	Period int64       `json:"period"`
 }
+
+type crontabRequest struct {
+	Event   string      `json:"event"`
+	Data    interface{} `json:"data"`
+	Crontab string      `json:"crontab"`
+}
