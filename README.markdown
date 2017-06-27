@@ -10,7 +10,7 @@ MaatQ
 * [x] 队列实现分组
 * [x] 实现优先队列
 * [x] 实现周期行任务
-* [ ] 实现Crontab
+* [x] 实现Crontab
 * [ ] HTTP API
 * [ ] `Go`，`PHP`和`Python`的客户端
 * [ ] 实现队列任务监控
