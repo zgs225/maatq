@@ -61,6 +61,12 @@ POST /v1/messages/crontab
 }
 ```
 
+* 尝试取消一条消息
+
+```
+POST /v1/messages/cancel/xxxxx-xxx-xxxx
+```
+
 ### 实现
 
 往名为`maatq:default`的Redis列表中写入消息。消息遵循以下协议:
