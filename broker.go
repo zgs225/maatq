@@ -55,7 +55,7 @@ func NewBroker(config *BrokerOptions) (*Broker, error) {
 		broker.scheduler = NewDefaultScheduler(config.Addr, config.Password)
 		h, err := broker.scheduler.loads()
 		log.Debug("Loading dumps: ", h)
-		if err == nil && h.Len() > 0 {
+		if err == nil && h != nil && h.Len() > 0 {
 			log.Debug("Dumps loaded")
 			broker.scheduler.heap = h
 		}
