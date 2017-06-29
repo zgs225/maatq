@@ -15,6 +15,9 @@ type minHeap struct {
 func (h minHeap) Len() int {
 	h.mu.Lock()
 	defer h.mu.Unlock()
+	if h.Items == nil {
+		return 0
+	}
 	return len(*h.Items)
 }
 
