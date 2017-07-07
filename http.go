@@ -4,7 +4,7 @@ type response struct {
 	Ok      bool   `json:"ok"`
 	Code    int    `json:"code"`
 	EventId string `json:"event_id"`
-	Err     string `json:err"`
+	Err     string `json:"err"`
 }
 
 type delayRequest struct {
