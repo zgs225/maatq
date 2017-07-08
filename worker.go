@@ -135,6 +135,7 @@ func (w *Worker) handle() {
 	} else {
 		w.cm.EndTime = time.Now()
 		w.Logger.WithFields(message.ToLogFields()).Infof("[%.2fms] [%s]", w.cm.milliSeconds(), "ok")
+		w.Logger.WithFields(message.ToLogFields()).Debug("Result", result)
 		w.notify(true, "", result)
 	}
 }
