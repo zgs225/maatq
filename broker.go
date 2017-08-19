@@ -95,7 +95,7 @@ func (b *Broker) newHttpServer() http.Handler {
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		key := "/v1/messages/cancel/"
 		w.Header().Set("Server", "mataq/1.0")
-		if r.URL.Path[:len(key)] == key {
+		if len(r.URL.Path) > len(key) && r.URL.Path[:len(key)] == key {
 			w.Header().Set("Content-Type", "application/json")
 			id := r.URL.Path[len(key):]
 			ok := b.scheduler.Cancel(id)
