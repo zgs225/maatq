@@ -85,12 +85,6 @@ func (b *Broker) ServeLoop(addr string) {
 	}
 	go b.ServeHttp(addr, ch)
 	go b.inspector.ServeLoop()
-	go func() {
-		time.Sleep(time.Second)
-		b.scheduler.health.dead()
-		time.Sleep(time.Second)
-		b.scheduler.health.Alive()
-	}()
 	log.Error(<-ch)
 }
 
