@@ -59,6 +59,7 @@ func NewBroker(config *BrokerOptions) (*Broker, error) {
 	if config.Scheduler {
 		broker.scheduler = NewDefaultScheduler(config.Addr, config.Password)
 		if len(broker.config.AlertReciever) > 0 {
+			log.Infof("报警邮件接受人设置为: %s", broker.config.AlertReciever)
 			broker.scheduler.health.SetDeadFunc(NewEmailAlerter(broker.config.AlertReciever))
 		}
 		broker.inspector.AddItem(broker.scheduler.health)
