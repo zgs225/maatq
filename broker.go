@@ -19,19 +19,22 @@ type Broker struct {
 	scheduler *Scheduler
 	group     *WorkerGroup
 	config    *BrokerOptions
+	inspector *healthChecker
 	redis     *redis.Client
 }
 
 type BrokerOptions struct {
-	Parallel  int
-	Addr      string
-	Password  string
-	Try       int
-	Queues    []string
-	Scheduler bool
+	Parallel            int
+	Addr                string
+	Password            string
+	Try                 int
+	Queues              []string
+	Scheduler           bool
+	HealthCheckInterval time.Duration
 }
 
 func NewBroker(config *BrokerOptions) (*Broker, error) {
+	inspector := NewHealthChecker(config.HealthCheckInterval)
 	group, err := NewWorkerGroup(&GroupOptions{
 		Parallel: config.Parallel,
 		Addr:     config.Addr,
@@ -43,8 +46,9 @@ func NewBroker(config *BrokerOptions) (*Broker, error) {
 		return nil, err
 	}
 	broker := &Broker{
-		group:  group,
-		config: config,
+		group:     group,
+		config:    config,
+		inspector: inspector,
 		redis: redis.NewClient(&redis.Options{
 			Addr:     config.Addr,
 			Password: config.Password,
@@ -53,6 +57,15 @@ func NewBroker(config *BrokerOptions) (*Broker, error) {
 	}
 	if config.Scheduler {
 		broker.scheduler = NewDefaultScheduler(config.Addr, config.Password)
+		broker.scheduler.health.SetDeadFunc(func(i *checkItem) error {
+			log.Println("dead")
+			return nil
+		})
+		broker.scheduler.health.SetAliveFunc(func(i *checkItem) error {
+			log.Println("alive")
+			return nil
+		})
+		broker.inspector.AddItem(broker.scheduler.health)
 		h, err := broker.scheduler.loads()
 		log.Debug("Loading dumps: ", h)
 		if err == nil && h != nil && h.Len() > 0 {
@@ -74,6 +87,13 @@ func (b *Broker) ServeLoop(addr string) {
 		go b.scheduler.ServeLoop()
 	}
 	go b.ServeHttp(addr, ch)
+	go b.inspector.ServeLoop()
+	go func() {
+		time.Sleep(time.Second)
+		b.scheduler.health.dead()
+		time.Sleep(time.Second)
+		b.scheduler.health.Alive()
+	}()
 	log.Error(<-ch)
 }
 

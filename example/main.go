@@ -40,7 +40,15 @@ func main() {
 	flag.Parse()
 	setLogger()
 
-	config := &maatq.BrokerOptions{*parallel, *addr, *password, *try, []string{"default", "sms"}, true}
+	config := &maatq.BrokerOptions{
+		Parallel:            *parallel,
+		Addr:                *addr,
+		Password:            *password,
+		Try:                 *try,
+		Queues:              []string{"default", "sms"},
+		Scheduler:           true,
+		HealthCheckInterval: time.Second,
+	}
 	broker, err := maatq.NewBroker(config)
 	if err != nil {
 		log.Panic(err)

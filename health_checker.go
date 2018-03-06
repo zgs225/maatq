@@ -104,6 +104,10 @@ func (c *checkItem) Alive() {
 	dead := !c.alive
 	c.alive = true
 	c.timestamp = time.Now().Unix()
+	c.logger.Debug("pit-a-pat")
+	if dead {
+		c.logger.Info("已复活")
+	}
 	if dead && c.aliveFunc != nil {
 		if err := c.aliveFunc(c); err != nil {
 			c.logger.WithError(err).Error("复活回调错误")

@@ -34,6 +34,7 @@ type Scheduler struct {
 	isRunning    bool
 	r            *redis.Client
 	csleep       *cancelSleep
+	health       *checkItem
 }
 
 func (s *Scheduler) SetInterval(v time.Duration) {
@@ -56,6 +57,8 @@ func (s *Scheduler) ServeLoop() {
 			s.logger.Debugf("Waking up in %s", d.String())
 			s.csleep.Sleep(d)
 		}
+
+		s.health.Alive()
 	}
 }
 
@@ -176,5 +179,6 @@ func NewDefaultScheduler(addr, password string) *Scheduler {
 			DB:       0,
 		}),
 		csleep: newCancelSleep(),
+		health: NewCheckItem("Schedular", DEFAULT_MAX_INTERVAL, "Task schedular"),
 	}
 }
