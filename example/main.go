@@ -59,17 +59,17 @@ func main() {
 		Try:       0,
 		Data:      "Hello period",
 	}
-	p, _ := maatq.NewPeriod(300)
-
-	broker.Period(m, p)
-	time.Sleep(time.Second)
-	m.Data = "Hello cron....."
-	cron, _ := maatq.NewCrontab("*/2 * * * *")
-	broker.Crontab(m, cron)
-
-	time.Sleep(time.Second)
+	// p, _ := maatq.NewPeriod(300)
+	//
+	// broker.Period(m, p)
+	// time.Sleep(time.Second)
+	// m.Data = "Hello cron....."
+	// cron, _ := maatq.NewCrontab("*/2 * * * *")
+	// broker.Crontab(m, cron)
+	//
+	// time.Sleep(time.Second)
 	m.Data = "Hi cron....."
-	cron, _ = maatq.NewCrontab("* * * * *")
+	cron, _ := maatq.NewCrontab("* * * * *")
 	broker.Crontab(m, cron)
 
 	if err := broker.Dumps(); err != nil {

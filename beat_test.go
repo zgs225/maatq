@@ -1,12 +1,5 @@
 package maatq
 
-import (
-	"fmt"
-	"reflect"
-	"testing"
-	"time"
-)
-
 // This example demostrate how to use a scheduler
 // func Example_ServeLoop() {
 // 	s := maatq.NewDefaultScheduler("127.0.0.1:6379", "")
