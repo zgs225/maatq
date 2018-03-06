@@ -58,10 +58,9 @@ func NewBroker(config *BrokerOptions) (*Broker, error) {
 	}
 	if config.Scheduler {
 		broker.scheduler = NewDefaultScheduler(config.Addr, config.Password)
-		broker.scheduler.health.SetDeadFunc(NewEmailAlerter(broker.config.AlertReciever))
-		broker.scheduler.health.SetAliveFunc(func(i *checkItem) error {
-			return nil
-		})
+		if len(broker.config.AlertReciever) > 0 {
+			broker.scheduler.health.SetDeadFunc(NewEmailAlerter(broker.config.AlertReciever))
+		}
 		broker.inspector.AddItem(broker.scheduler.health)
 		h, err := broker.scheduler.loads()
 		log.Debug("Loading dumps: ", h)
