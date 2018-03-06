@@ -31,6 +31,7 @@ type BrokerOptions struct {
 	Queues              []string
 	Scheduler           bool
 	HealthCheckInterval time.Duration
+	AlertReciever       string
 }
 
 func NewBroker(config *BrokerOptions) (*Broker, error) {
@@ -57,12 +58,8 @@ func NewBroker(config *BrokerOptions) (*Broker, error) {
 	}
 	if config.Scheduler {
 		broker.scheduler = NewDefaultScheduler(config.Addr, config.Password)
-		broker.scheduler.health.SetDeadFunc(func(i *checkItem) error {
-			log.Println("dead")
-			return nil
-		})
+		broker.scheduler.health.SetDeadFunc(NewEmailAlerter(broker.config.AlertReciever))
 		broker.scheduler.health.SetAliveFunc(func(i *checkItem) error {
-			log.Println("alive")
 			return nil
 		})
 		broker.inspector.AddItem(broker.scheduler.health)

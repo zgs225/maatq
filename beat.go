@@ -179,6 +179,6 @@ func NewDefaultScheduler(addr, password string) *Scheduler {
 			DB:       0,
 		}),
 		csleep: newCancelSleep(),
-		health: NewCheckItem("Schedular", DEFAULT_MAX_INTERVAL, "Task schedular"),
+		health: NewCheckItem("Schedular", DEFAULT_MAX_INTERVAL+time.Second, "Task schedular"),
 	}
 }
