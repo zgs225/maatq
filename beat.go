@@ -5,6 +5,7 @@ import (
 	"container/heap"
 	"encoding/gob"
 	"encoding/json"
+	"sync"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -27,6 +28,7 @@ const (
 )
 
 type Scheduler struct {
+	mu           sync.RWMutex
 	interval     time.Duration
 	heap         *minHeap
 	logger       *log.Entry
@@ -68,6 +70,8 @@ func (s *Scheduler) ServeLoop() {
 
 // Delay a message in give duration
 func (s *Scheduler) Delay(m *Message, d time.Duration) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	t := time.Now().Add(d)
 	pm := &PriorityMessage{*m, t.Unix(), nil}
 	heap.Push(s.heap, pm)
@@ -76,6 +80,8 @@ func (s *Scheduler) Delay(m *Message, d time.Duration) {
 
 // 添加周期执行的任务
 func (s *Scheduler) Period(m *Message, p *Period) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.logger.WithFields(m.ToLogFields()).WithField("period", time.Second*time.Duration(p.Cycle)).Info("Periodic message recieved")
 	t := p.Next()
 	pm := &PriorityMessage{*m, t.Unix(), p}
@@ -85,6 +91,8 @@ func (s *Scheduler) Period(m *Message, p *Period) {
 
 // 添加Crontab任务
 func (s *Scheduler) Crontab(m *Message, cron *Crontab) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.logger.WithFields(m.ToLogFields()).WithField("crontab", cron.Text).Info("Crontab message recieved")
 	t := cron.Next()
 	pm := &PriorityMessage{*m, t.Unix(), cron}
@@ -94,6 +102,8 @@ func (s *Scheduler) Crontab(m *Message, cron *Crontab) {
 
 // 取消一个任务
 func (s *Scheduler) Cancel(id string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.csleep.Cancel()
 	items := *s.heap.Items
 	for i := 0; i < s.heap.Len(); i++ {
@@ -111,6 +121,8 @@ func (s *Scheduler) Cancel(id string) bool {
 // Run a tick, one iteration of the scheduler, executes one due task per call.
 // Returns preferred delay duration for next call
 func (s *Scheduler) tick() (time.Duration, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	if s.heap.Len() <= 0 {
 		return s.interval, nil
 	}

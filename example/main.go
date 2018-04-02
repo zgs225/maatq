@@ -78,9 +78,13 @@ func main() {
 	// broker.Crontab(m, cron)
 	//
 	// time.Sleep(time.Second)
-	m.Data = "Hi cron....."
-	cron, _ := maatq.NewCrontab("* * * * *")
-	broker.Crontab(m, cron)
+	// m.Data = "Hi cron....."
+	// cron, _ := maatq.NewCrontab("* * * * *")
+	for i := 0; i < 10000; i++ {
+		log.Println(i)
+		m.Id = uuid.New().String()
+		broker.Delay(m, time.Second*60)
+	}
 
 	if err := broker.Dumps(); err != nil {
 		log.Error(err)

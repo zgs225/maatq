@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"container/heap"
 	"encoding/json"
-	"sync"
 )
 
 // minHeap to hold peroidic messages, minHeap implements
 // container/heap.Interface
 type minHeap struct {
-	mu    sync.Mutex
 	Items *[]*PriorityMessage
 }
 
@@ -23,8 +21,6 @@ func (h minHeap) String() string {
 }
 
 func (h minHeap) Len() int {
-	h.mu.Lock()
-	defer h.mu.Unlock()
 	if h.Items == nil {
 		return 0
 	}
@@ -32,26 +28,18 @@ func (h minHeap) Len() int {
 }
 
 func (h minHeap) Less(i, j int) bool {
-	h.mu.Lock()
-	defer h.mu.Unlock()
 	return (*h.Items)[i].T < (*h.Items)[j].T
 }
 
 func (h minHeap) Swap(i, j int) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
 	(*h.Items)[i], (*h.Items)[j] = (*h.Items)[j], (*h.Items)[i]
 }
 
 func (h minHeap) Push(x interface{}) {
-	h.mu.Lock()
-	defer h.mu.Unlock()
 	*h.Items = append(*h.Items, x.(*PriorityMessage))
 }
 
 func (h minHeap) Pop() interface{} {
-	h.mu.Lock()
-	defer h.mu.Unlock()
 	n := len(*h.Items) - 1
 	v := (*h.Items)[n]
 	*h.Items = (*h.Items)[0:n]
