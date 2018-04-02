@@ -18,6 +18,12 @@ MaatQ
 
 ### HTTP API
 
+* 查询调度器任务列表
+
+```
+GET /v1/schedular/list
+```
+
 * 发布一条消息
 
 ```
