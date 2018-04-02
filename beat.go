@@ -37,6 +37,10 @@ type Scheduler struct {
 	health       *checkItem
 }
 
+func (s *Scheduler) toJSON() string {
+	return s.heap.String()
+}
+
 func (s *Scheduler) SetInterval(v time.Duration) {
 	s.interval = v
 }

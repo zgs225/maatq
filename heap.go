@@ -1,7 +1,9 @@
 package maatq
 
 import (
+	"bytes"
 	"container/heap"
+	"encoding/json"
 	"sync"
 )
 
@@ -10,6 +12,14 @@ import (
 type minHeap struct {
 	mu    sync.Mutex
 	Items *[]*PriorityMessage
+}
+
+func (h minHeap) String() string {
+	b := bytes.Buffer{}
+	if err := json.NewEncoder(&b).Encode(h.Items); err != nil {
+		return err.Error()
+	}
+	return b.String()
 }
 
 func (h minHeap) Len() int {

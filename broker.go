@@ -292,7 +292,15 @@ func (b *Broker) newHttpServer() http.Handler {
 		json.NewEncoder(w).Encode(&resp)
 	})
 
+	mux.HandleFunc("/v1/schedular/list", b.newHTTPHandlerForSchedularList())
+
 	return mux
+}
+
+func (b *Broker) newHTTPHandlerForSchedularList() func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		w.Write([]byte(b.scheduler.toJSON()))
+	}
 }
 
 func (b *Broker) Enqueue(queue string, m *Message) error {
