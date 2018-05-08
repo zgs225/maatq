@@ -17,7 +17,7 @@ var (
 	addr     = flag.String("addr", "localhost:6379", "Redis主机和端口")
 	password = flag.String("password", "", "Redis密码")
 	debug    = flag.Bool("debug", true, "是否开启Debug")
-	reciever = flag.String("reciever", "zhaigenshen@youplus.cc", "邮件告警人")
+	receiver = flag.String("receiver", "zhaigenshen@youplus.cc", "邮件告警人")
 )
 
 func SayHello(arg interface{}) (interface{}, error) {
@@ -49,7 +49,7 @@ func main() {
 		Queues:              []string{"default", "sms"},
 		Scheduler:           true,
 		HealthCheckInterval: time.Second,
-		AlertReciever:       *reciever,
+		AlertReceiver:       *receiver,
 	}
 	broker, err := maatq.NewBroker(config)
 	if err != nil {
@@ -69,17 +69,7 @@ func main() {
 		Try:       0,
 		Data:      "Hello period",
 	}
-	// p, _ := maatq.NewPeriod(300)
-	//
-	// broker.Period(m, p)
-	// time.Sleep(time.Second)
-	// m.Data = "Hello cron....."
-	// cron, _ := maatq.NewCrontab("*/2 * * * *")
-	// broker.Crontab(m, cron)
-	//
-	// time.Sleep(time.Second)
-	// m.Data = "Hi cron....."
-	// cron, _ := maatq.NewCrontab("* * * * *")
+
 	for i := 0; i < 10000; i++ {
 		log.Println(i)
 		m.Id = uuid.New().String()
