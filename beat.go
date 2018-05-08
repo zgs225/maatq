@@ -28,7 +28,7 @@ const (
 )
 
 type Scheduler struct {
-	mu           sync.RWMutex
+	mu           sync.Mutex
 	interval     time.Duration
 	heap         *minHeap
 	logger       *log.Entry
@@ -121,8 +121,8 @@ func (s *Scheduler) Cancel(id string) bool {
 // Run a tick, one iteration of the scheduler, executes one due task per call.
 // Returns preferred delay duration for next call
 func (s *Scheduler) tick() (time.Duration, error) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if s.heap.Len() <= 0 {
 		return s.interval, nil
 	}
