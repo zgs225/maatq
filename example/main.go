@@ -71,10 +71,19 @@ func main() {
 	}
 
 	for i := 0; i < 10000; i++ {
-		log.Println(i)
 		m.Id = uuid.New().String()
-		broker.Delay(m, time.Second*60)
+		p, _ := maatq.NewPeriod(60)
+		broker.Period(m, p)
 	}
+
+	go func() {
+		for i := 0; i < 10000; i++ {
+			m.Id = uuid.New().String()
+			m.Data = "Bye period"
+			p, _ := maatq.NewPeriod(15)
+			broker.Period(m, p)
+		}
+	}()
 
 	if err := broker.Dumps(); err != nil {
 		log.Error(err)

@@ -6,28 +6,30 @@ import (
 )
 
 type cancelSleep struct {
-	quit chan int
+	quit chan bool
 	flag int32
 }
 
 func (cs *cancelSleep) Sleep(d time.Duration) {
-	if atomic.LoadInt32(&cs.flag) == 0 {
-		atomic.StoreInt32(&cs.flag, 1)
-		go func() { time.AfterFunc(d, cs.Cancel) }()
-		<-cs.quit
+	atomic.StoreInt32(&cs.flag, 1)
+	select {
+	case <-cs.quit:
 		atomic.StoreInt32(&cs.flag, 0)
+		break
+	case <-time.After(d):
+		atomic.StoreInt32(&cs.flag, 0)
+		break
 	}
 }
 
 func (cs *cancelSleep) Cancel() {
-	if atomic.LoadInt32(&cs.flag) == 1 {
-		cs.quit <- 1
-		atomic.StoreInt32(&cs.flag, 0)
+	if cs.flag == 1 {
+		cs.quit <- true
 	}
 }
 
 func newCancelSleep() *cancelSleep {
 	return &cancelSleep{
-		quit: make(chan int, 1),
+		quit: make(chan bool, 1),
 	}
 }
