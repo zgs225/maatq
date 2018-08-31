@@ -49,7 +49,7 @@ func (s *Scheduler) SetInterval(v time.Duration) {
 }
 
 func (s *Scheduler) ServeLoop() {
-	s.logger.Info("Starting...")
+	s.logger.Info("Started")
 	s.logger.Debugf("Ticking with max interval %s", s.interval.String())
 
 	for s.isRunning {

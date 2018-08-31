@@ -341,6 +341,11 @@ func (b *Broker) Dumps() error {
 	return b.scheduler.dumps()
 }
 
+// SchedularAvaiable 查询代理人是否支持任务调度器
+func (b *Broker) SchedularAvaiable() bool {
+	return b.config.Scheduler && (b.scheduler != nil) && b.scheduler.isRunning
+}
+
 func (b *Broker) handleSignals() {
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
