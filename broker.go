@@ -142,7 +142,7 @@ func (b *Broker) newHttpServer() http.Handler {
 		m.Timestamp = time.Now().Unix()
 		m.Try = 0
 
-		if err := b.Enqueue(DefaultQueue, &m); err != nil {
+		if err := b.Enqueue(m.GetWorkQueue(), &m); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			resp := response{
 				Ok:   false,
@@ -184,6 +184,7 @@ func (b *Broker) newHttpServer() http.Handler {
 		m.Data = req.Data
 		m.Timestamp = time.Now().Unix()
 		m.Try = 0
+		m.Queue = req.Queue
 		d, err := time.ParseDuration(req.Delay)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -228,6 +229,7 @@ func (b *Broker) newHttpServer() http.Handler {
 		m.Data = req.Data
 		m.Timestamp = time.Now().Unix()
 		m.Try = 0
+		m.Queue = req.Queue
 		p, err := NewPeriod(req.Period)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -272,6 +274,7 @@ func (b *Broker) newHttpServer() http.Handler {
 		m.Data = req.Data
 		m.Timestamp = time.Now().Unix()
 		m.Try = 0
+		m.Queue = req.Queue
 		cron, err := NewCrontab(req.Crontab)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

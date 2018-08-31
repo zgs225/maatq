@@ -13,6 +13,7 @@ type Message struct {
 	Timestamp int64       `json:"timestamp"`
 	Try       int         `json:"try"`
 	Data      interface{} `json:"data,omitempty"`
+	Queue     string      `json:"queue,omitempty"`
 }
 
 func (m *Message) ToLogFields() log.Fields {
@@ -22,7 +23,15 @@ func (m *Message) ToLogFields() log.Fields {
 		"timestamp": m.Timestamp,
 		"try":       m.Try,
 		"data":      m.Data,
+		"queue":     m.GetWorkQueue(),
 	}
+}
+
+func (m *Message) GetWorkQueue() string {
+	if len(m.Queue) == 0 {
+		return DefaultQueue
+	}
+	return queueName(m.Queue)
 }
 
 // 处理中的消息的结构

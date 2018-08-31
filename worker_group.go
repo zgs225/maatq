@@ -63,7 +63,7 @@ func (g *WorkerGroup) initWorkers() {
 		g.Workers[i] = c
 
 		for _, q := range g.options.Queues {
-			c.queues = append(c.queues, "maatq:"+q)
+			c.queues = append(c.queues, queueName(q))
 		}
 
 		c.client = redis.NewClient(&redis.Options{

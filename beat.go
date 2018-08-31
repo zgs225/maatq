@@ -140,8 +140,8 @@ func (s *Scheduler) tick() (time.Duration, error) {
 			s.logger.Error(err)
 			return time.Duration(0), err
 		}
-		s.logger.WithField("msg", string(b)).Debugf("Priority message push to queue %s", DefaultQueue)
-		s.r.RPush(DefaultQueue, string(b))
+		s.logger.WithField("msg", string(b)).Debugf("Priority message push to queue %s", m.GetWorkQueue())
+		s.r.RPush(m.GetWorkQueue(), string(b))
 		if m.IsPeriodic() {
 			m.T = m.P.Next().Unix()
 			s.mu.Lock()

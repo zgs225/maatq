@@ -7,7 +7,6 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/google/uuid"
 	"github.com/zgs225/maatq"
 )
 
@@ -46,7 +45,7 @@ func main() {
 		Addr:                *addr,
 		Password:            *password,
 		Try:                 *try,
-		Queues:              []string{"default", "sms"},
+		Queues:              []string{"sms"},
 		Scheduler:           true,
 		HealthCheckInterval: time.Second,
 		AlertReceiver:       *receiver,
@@ -56,38 +55,6 @@ func main() {
 		log.Panic(err)
 	}
 
-	c := make(chan int)
-
 	broker.AddEventHandler("hello", maatq.EventHandler(SayHello))
-	go broker.ServeLoop(":8181")
-
-	u := uuid.New()
-	m := &maatq.Message{
-		Id:        u.String(),
-		Event:     "hello",
-		Timestamp: time.Now().Unix(),
-		Try:       0,
-		Data:      "Hello period",
-	}
-
-	for i := 0; i < 10000; i++ {
-		m.Id = uuid.New().String()
-		p, _ := maatq.NewPeriod(60)
-		broker.Period(m, p)
-	}
-
-	go func() {
-		for i := 0; i < 10000; i++ {
-			m.Id = uuid.New().String()
-			m.Data = "Bye period"
-			p, _ := maatq.NewPeriod(15)
-			broker.Period(m, p)
-		}
-	}()
-
-	if err := broker.Dumps(); err != nil {
-		log.Error(err)
-	}
-
-	<-c
+	broker.ServeLoop(":8181")
 }

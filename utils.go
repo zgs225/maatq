@@ -67,3 +67,8 @@ func inInt8Slice(n int8, data []int8) bool {
 	i := sort.Search(len(data), func(i int) bool { return data[i] >= n })
 	return i < len(data) && data[i] == n
 }
+
+// 生成完整的队列名称，例如 default => maatq:default
+func queueName(q string) string {
+	return "maatq:" + q
+}
